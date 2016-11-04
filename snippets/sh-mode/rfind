@@ -1,0 +1,6 @@
+# -*- mode: snippet -*-
+# name: find pattern recursively and print
+# key: rfind
+# group: find
+# --
+find . -name \.${1:cpp} -exec grep -q ${2:"debug"} '{}' \; -print$0

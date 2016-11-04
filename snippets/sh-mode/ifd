@@ -1,0 +1,8 @@
+# -*- mode: snippet -*-
+# name: if directory
+# key: ifd
+# expand-env: ((yas-indent-line 'fixed))
+# --
+if [ -d $1 ]; then
+    $2
+fi$0

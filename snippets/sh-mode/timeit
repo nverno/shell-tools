@@ -1,0 +1,11 @@
+# -*- mode: snippet -*-
+# name: Add timing
+# key: timeit
+# --
+START=$(date +%s)
+$0
+END=$(date +%s)
+DIFF=$(( $END - $START ))
+DIFF=$(( $DIFF / 60 ))
+
+echo "runtime: $DIFF minutes"

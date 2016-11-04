@@ -1,0 +1,94 @@
+;; -*- coding: utf-8; mode: emacs-lisp; no-byte-compile: t; -*-
+
+(define-abbrev-table 'shells-abbrev-table
+  '(
+    ("a2" "2>&1" nil :system t) 
+    ("ddu" "ls | xargs -n 1 du -hs" nil :system t)
+    ("bitn" "https://bitbucket.org/nverno "nil :system t) 
+    ("gitn" "https://github.com/nverno" nil :system t) 
+    ("gitp" "git pull" nil :system t) 
+    ("suag" "sudo apt-get" nil :system t) 
+    ("bitcl" "https://bitbucket.org" nil :system t) 
+    ("bitrm" "git remote add origin https://bitbucket.org/nverno"
+     nil :system t) 
+    ("gitcl" "git clone https://github.com" nil :system t) 
+    ("gitrm" "git remote add origin https://github.com/nverno"
+     nil :system t) 
+    ("lgrep" "ls -all | grep " nil :system t)
+    ("suagi" "sudo apt-get install -y" nil :system t) 
+    ("suagu" "sudo apt-get update" nil :system t) 
+    ("gitcln" "git clone https://github.com/nverno" nil :system t) 
+    ("bitcln" "git clone https://bitbucket.org/nverno" nil :system t) 
+    )
+  "Shells abbrevs."
+  :parents (list prog-mode-abbrev-table))
+
+(define-abbrev-table 'shell-mode-abbrev-table
+  '(
+    ("dn" ">/dev/null" nil :system t)
+    )
+  "Shell-Mode Abbrevs."
+  :parents (list shells-abbrev-table)
+  :enable-function 'shell-tools-abbrev-expand-p
+  :regexp shell-tools-abbrev-re)
+
+(define-abbrev-table 'shell-alias-abbrev-table
+  '(
+    ("sag" "sudo apt-get " nil :system t)
+    ("cdc" "cd c:/" nil :system t)
+    ("cdd" "cd d:/" nil :system t)
+    ("df" "df -kTh" nil :system t)
+    ("du" "du -kh" nil :system t)
+    ("e" "emacsclient -ca \"\"" nil :system t)
+    ("ebc" "emacs -Q -batch -L . -f batch-byte-compile" nil :system t)
+    ("egrep" "egrep --color=auto" nil :system t)
+    ("et" "emacsclient -ta \"\"" nil :system t)
+    ("fgrep" "fgrep --color=auto" nil :system t)
+    ("gdb" "gdb -q" nil :system t)
+    ("gitd" "git add -A && git commit -m squash && git push -u" nil :system t)
+    ("grep" "grep --color=auto" nil :system t)
+    ("httpd" "screen -S httpd python -m SimpleHTTPServer 8001" nil :system t)
+    ("ins" "sudo apt-get install" nil :system t)
+    ("l" "ls -CF" nil :system t)
+    ("la" "ls -A" nil :system t)
+    ("lc" "ls -ltcr" nil :system t)
+    ("libpath" "echo -e ${LD_LIBRARY_PATH//:/\\\\n}" nil :system t)
+    ("lk" "ls -lSr" nil :system t)
+    ("ll" "ls -alF" nil :system t)
+    ("lr" "ls -R" nil :system t)
+    ;; ("ls" "ls --color=auto" nil :system t)
+    ("lt" "ls -ltr" nil :system t)
+    ("lu" "ls -ltur" nil :system t)
+    ("lx" "ls -lXB" nil :system t)
+    ("mkdir" "mkdir -p" nil :system t)
+    ("mozilla" "\"$PROGRAMFILES/Mozilla Firefox/firefox.exe\"" nil :system t)
+    ("p" "pushd" nil :system t)
+    ("path" "echo -e ${PATH//:/\\\\n}" nil :system t)
+    ("pm" "pmount" nil :system t)
+    ("po" "popd" nil :system t)
+    ("pu" "pumount" nil :system t)
+    ("s" "less -SR" nil :system t)
+    ("sql" "sqlite3 -interactive :memory:" nil :system t)
+    ("t" "tar -axvf" nil :system t)
+    ("tree" "tree -Csuh" nil :system t)
+    ("vlc" "\"$PROGRAMFILES/VideoLAN/VLC/vlc.exe\"" nil :system t))
+  "Shell-Mode Aliases for crappy windows shells."
+  :parents (list shell-mode-abbrev-table)
+  :enable-function 'shell-tools-abbrev-expand-p
+  :regexp shell-tools-abbrev-re)
+
+(define-abbrev-table 'eshell-mode-abbrev-table
+  '()
+  "eshell mode abbrevs"
+  :parents (list shell-mode-abbrev-table))
+
+(define-abbrev-table 'sh-mode-abbrev-table
+  '(
+    ("dn" ">/dev/null" nil :system t))
+  "sh mode abbrevs"
+  :parents (list shells-abbrev-table))
+
+(define-abbrev-table 'fish-mode-abbrev-table
+  '()
+  "Fish-Mode Abbrevs."
+  :parents (list shells-abbrev-table))

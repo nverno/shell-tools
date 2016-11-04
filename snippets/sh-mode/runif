@@ -1,0 +1,12 @@
+# -*- mode: snippet -*-
+# name: run if executable found
+# key: runif
+# --
+$1() {
+    if hash $2 2>/dev/null; then
+	$2 "$@"
+    else
+	${3:exit 1}
+    fi
+}
+

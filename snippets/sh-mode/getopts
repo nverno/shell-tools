@@ -1,0 +1,16 @@
+# -*- mode: snippet -*-
+# name: getopts
+# key: getopts
+# --
+OPT1="default value"
+OPT2=0
+
+while getopts "${1:d:s}" o
+do case "$o" in
+    {2:d}) OPT1="$OPTARG";;
+    {3:s}) OPT2=1;;
+    [?]) print >&2 "Usage: \$0 [-s] [-d seplist] file ..."
+        exit 1;;
+   esac
+done
+shift $(expr $OPTIND - 1)

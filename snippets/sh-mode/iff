@@ -1,0 +1,8 @@
+# -*- mode: snippet -*-
+# name: if file
+# key: iff
+# expand-env: ((yas-indent-line 'fixed))
+# --
+if [ -f $1 ]; then
+    $2
+fi$0

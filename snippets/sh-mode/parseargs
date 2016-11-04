@@ -1,0 +1,23 @@
+# -*- mode: snippet -*-
+# name: parse & process params/args
+# key: parseargs
+# --
+while [ "\$1" != "" ]; do
+    case \$1 in
+	-$1 ) shift
+	    $2=\$1 ;;
+	-$3 ) shift
+	    $4=\$1 ;;
+	--${5:parameter|p} ) shift
+	     $5=\$1 ;;
+	-h|help ) ${6:usage #}
+	
+	$0
+function call
+              exit ;;     
+	* )   usage # All other
+parameters
+              exit 1
+    esac
+    shift
+done
