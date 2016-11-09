@@ -40,11 +40,6 @@
 ;; ------------------------------------------------------------
 ;;; Install
 
-;; setup clink so it starts whenever cmd.exe runs
-(defun shell-tools-clink-install ()
-  (start-process "clink" "*nvp-install*" "cmd.exe"
-                 "clink" "autorun" "install"))
-
 ;;; Pcomplete
 
 (defun pcomplete/shell-mode/git ()
@@ -64,18 +59,26 @@
       ;; (my--get-git-branches t)
       ))))
 
-;;; Shells
+;; setup clink so it starts whenever cmd.exe runs
+(nvp-with-w32
+  (defun shell-w32tools-clink-install ()
+    (start-process "clink" "*nvp-install*" "cmd.exe"
+                   "clink" "autorun" "install")))
+
+;; ------------------------------------------------------------
+;;;; Shells
 
 ;; return some available shells
 (defun shell-tools-get-shells ()
-  (cond
-   ((eq system-type 'windows-nt)
-    (cl-loop
-       for var in `(,(expand-file-name "usr/bin" (getenv "MSYS_HOME"))
-                    ,(expand-file-name "bin" (getenv "CYGWIN_HOME")))
-       nconc (mapcar (lambda (x) (expand-file-name x var))
-                     '("sh.exe" "bash.exe" "fish.exe" "zsh.exe"))))
-   (t '("sh" "bash" "fish" "zsh"))))
+  (or
+   (nvp-with-gnu
+     '("sh" "bash" "fish" "zsh"))
+   (nvp-with-w32
+     (cl-loop
+        for var in `(,(expand-file-name "usr/bin" (getenv "MSYS_HOME"))
+                     ,(expand-file-name "bin" (getenv "CYGWIN_HOME")))
+        nconc (mapcar (lambda (x) (expand-file-name x var))
+                      '("sh.exe" "bash.exe" "fish.exe" "zsh.exe"))))))
 
 ;; switch to a different shell for compiling
 (defvar-local shell-tools-shell "bash")
@@ -101,7 +104,7 @@
 
 ;; ------------------------------------------------------------
 ;;; Abbrevs
-
+;
 ;; dont expand in strings or after [-:]
 (defun shell-tools-abbrev-expand-p ()
   (not (or (memq last-input-event '(?- ?:))
@@ -201,6 +204,7 @@
 ;; ------------------------------------------------------------
 ;;; Setup
 
+;; FIXME: should be able to easily add to special abbrev list
 (autoload 'expand-add-abbrevs "expand")
 (eval-after-load 'shell
   '(expand-add-abbrevs

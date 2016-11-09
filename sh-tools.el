@@ -1,10 +1,48 @@
-;;; sh-tools --- 
+;;; sh-tools --- sh script -*- lexical-binding: t; -*-
 ;;; Code:
 (eval-when-compile
+  (require 'nvp-macro)
   (require 'cl-lib)
   (defvar company-backends))
 (require 'shell-tools)
 
+;; ------------------------------------------------------------
+;;; Completion
+
+(defvar sh-tools-company-backends '(company-bash :with company-shell))
+
+(nvp-with-gnu
+ ;; `bash-completion' is awesome
+ ;; just need to redefine `comint-line-beginning-position' so
+ ;; `bash-completion-dynamic-complete' can work in sh-script
+ (defun sh-tools-bash-completion ()
+   (cl-letf (((symbol-function 'comint-line-beginning-position)
+              #'(lambda ()
+                  (save-excursion
+                    (back-to-indentation)
+                    (point)))))
+     (bash-completion-dynamic-complete)))
+  
+  (when (require 'bash-completion nil t)
+    (add-hook 'completion-at-point-functions
+              'sh-tools-bash-completion nil 'local)
+    (setq sh-tools-company-backends '(company-bash :with company-capf))))
+
+;; setup company backends with company-bash and either company-shell
+;; or bash-completion
+(defun sh-tools-company-setup ()
+  (make-local-variable 'company-backends)
+  (cl-pushnew sh-tools-company-backends company-backends)
+  (setq-local company-transformers '(company-sort-by-backend-importance)))
+
+;; with prefix, only complete for sourced / local functions
+(defun sh-tools-company-bash (arg)
+  (interactive "P")
+  (if arg
+      (call-interactively 'company-bash)
+    (company-complete)))
+
+;; ------------------------------------------------------------
 ;;; Font-lock
 
 ;; Add additional font-locking to quoted variables
@@ -36,23 +74,13 @@
     (when font-lock-mode
       (font-lock-ensure (point-min) (point-max)))))
 
-;; cleanup on save
+;; ------------------------------------------------------------
+;;; Cleanup
+
 ;; enforce uft-8-unix on save
 (defun sh-tools-cleanup-buffer ()
   (unless (eq 'utf-8-unix buffer-file-coding-system)
     (set-buffer-file-coding-system 'utf-8-unix)))
-
-;; company completion
-(defun sh-tools-company-setup ()
-  (make-local-variable 'company-backends)
-  (cl-pushnew '(company-bash :with company-shell) company-backends)
-  (setq-local company-transformers '(company-sort-by-backend-importance)))
-
-(defun sh-tools-company-bash (arg)
-  (interactive "P")
-  (if arg
-      (call-interactively 'company-bash)
-    (company-complete)))
 
 ;; ------------------------------------------------------------
 
@@ -60,6 +88,7 @@
 (declare-function company-shell "company-shell")
 (declare-function company-sort-by-backend-importance "company")
 (declare-function company-complete "company")
+(declare-function bash-completion-dynamic-complete "bash-completion")
 
 (provide 'sh-tools)
 ;;; sh-tools.el ends here

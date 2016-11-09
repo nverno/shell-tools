@@ -1,4 +1,4 @@
-;;; company-bash --- 
+;;; company-bash --- Completion for sourced functions in sh script
 
 ;; This is free and unencumbered software released into the public domain.
 
@@ -33,6 +33,7 @@
 (eval-when-compile
   (require 'cl-lib))
 (require 'company)
+(autoload 'imenu--make-index-alist "imenu")
 
 ;; time of last index creation
 (defvar-local company-bash-last-index nil)
