@@ -51,7 +51,7 @@
     (setq company-bash-candidates (company-bash--make-index))))
 
 ;; gather sourced files
-(defun company--bash-sources ()
+(defun company-bash--sources ()
   (save-excursion
     (goto-char (point-min))
     (let (srcs)
@@ -81,7 +81,7 @@
 
 ;; gather functions from current/sourced files with imenu
 (defun company-bash--make-index ()
-  (let ((srcs (company--bash-sources))
+  (let ((srcs (company-bash--sources))
         (res (company-bash--imenu)))
     (when srcs
       (mapc
