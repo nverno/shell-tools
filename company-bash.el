@@ -89,7 +89,8 @@
        #'(lambda (file)
            (and (file-exists-p file)
                 (with-current-buffer (find-file-noselect file)
-                  (setq res (nconc res (company-bash--imenu))))))
+                  (and (eq major-mode 'sh-mode)
+                       (setq res (nconc res (company-bash--imenu)))))))
        srcs))
     res))
 

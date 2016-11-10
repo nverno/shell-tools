@@ -12,26 +12,32 @@
 (defvar sh-tools-company-backends '(company-bash :with company-shell))
 
 (nvp-with-gnu
- ;; `bash-completion' is awesome
- ;; just need to redefine `comint-line-beginning-position' so
- ;; `bash-completion-dynamic-complete' can work in sh-script
- (defun sh-tools-bash-completion ()
-   (cl-letf (((symbol-function 'comint-line-beginning-position)
-              #'(lambda ()
-                  (save-excursion
-                    (back-to-indentation)
-                    (point)))))
-     (bash-completion-dynamic-complete)))
+  ;; `bash-completion' is awesome
+  ;; just need to redefine `comint-line-beginning-position' so
+  ;; `bash-completion-dynamic-complete' can work in sh-script
+  (defun sh-tools-bash-completion ()
+    (cl-letf (((symbol-function 'comint-line-beginning-position)
+               #'(lambda ()
+                   (save-excursion
+                     (sh-beginning-of-command)
+                     (point)))))
+      (let ((syntax (syntax-ppss)))
+        (and (not (or (nth 3 syntax)
+                      (nth 4 syntax)))
+             (bash-completion-dynamic-complete)))))
   
   (when (require 'bash-completion nil t)
-    (add-hook 'completion-at-point-functions
-              'sh-tools-bash-completion nil 'local)
     (setq sh-tools-company-backends '(company-bash :with company-capf))))
 
 ;; setup company backends with company-bash and either company-shell
 ;; or bash-completion
 (defun sh-tools-company-setup ()
   (make-local-variable 'company-backends)
+  (nvp-with-gnu
+    (when (require 'bash-completion nil t)
+      (delq 'company-capf company-backends)
+      (add-hook 'completion-at-point-functions
+                'sh-tools-bash-completion nil 'local)))
   (cl-pushnew sh-tools-company-backends company-backends)
   (setq-local company-transformers '(company-sort-by-backend-importance)))
 
