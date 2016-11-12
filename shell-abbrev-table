@@ -20,6 +20,7 @@
     ("lgrep" "ls -all | grep " nil :system t)
     ("suagi" "sudo apt-get install -y" nil :system t) 
     ("suagu" "sudo apt-get update" nil :system t) 
+    ("suaar" "sudo add-apt-repository ppa:" nil :system t)
     ("gitcln" "git clone https://github.com/nverno" nil :system t) 
     ("bitcln" "git clone https://bitbucket.org/nverno" nil :system t) 
     )
