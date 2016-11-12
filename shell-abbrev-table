@@ -3,7 +3,9 @@
 (define-abbrev-table 'shells-abbrev-table
   '(
     ("a2" "2>&1" nil :system t) 
-    ("dn" "/dev/null" nil :system t)
+    ("dn" ">/dev/null" nil :system t)
+    ("dnn" "2>&1 >/dev/null" nil :system t)
+    ("dn2" "2>/dev/null" nil :system t)
     ("ddu" "ls | xargs -n 1 du -hs" nil :system t)
     ("bitn" "https://bitbucket.org/nverno "nil :system t) 
     ("gitn" "https://github.com/nverno" nil :system t) 
@@ -84,7 +86,9 @@
 
 (define-abbrev-table 'sh-mode-abbrev-table
   '(
-    ("dn" ">/dev/null" nil :system t))
+    ("here" "DIR=\"$( cd \"$( dirname \"${BASH_SOURCE[0]}\" )\" && pwd)\""
+     nil :system t)
+    )
   "sh mode abbrevs"
   :parents (list shells-abbrev-table))
 

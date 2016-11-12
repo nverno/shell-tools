@@ -1,7 +1,7 @@
 # -*- mode: snippet -*-
-# name:args
+# name: args
 # key: args
 # --
-if [ $# -lt ${1:2} ]
-   then $0
+if [ $# -lt ${1:2} ]; then
+   $0
 fi
