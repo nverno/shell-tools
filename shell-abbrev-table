@@ -2,7 +2,7 @@
 
 (define-abbrev-table 'shells-abbrev-table
   '(
-    ("a2" "2>&1" nil :system t) 
+    ("aa" "2>&1" nil :system t) 
     ("dn" ">/dev/null" nil :system t)
     ("dnn" "2>&1 >/dev/null" nil :system t)
     ("dn2" "2>/dev/null" nil :system t)
