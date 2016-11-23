@@ -95,6 +95,7 @@
 (declare-function company-sort-by-backend-importance "company")
 (declare-function company-complete "company")
 (declare-function bash-completion-dynamic-complete "bash-completion")
+(declare-function sh-beginning-of-command "sh-script")
 
 (provide 'sh-tools)
 ;;; sh-tools.el ends here
