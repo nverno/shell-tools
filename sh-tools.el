@@ -27,7 +27,8 @@
              (bash-completion-dynamic-complete)))))
   
   (when (require 'bash-completion nil t)
-    (setq sh-tools-company-backends '(company-bash :with company-capf))))
+    (setq sh-tools-company-backends
+          '(company-bash :with company-capf))))
 
 ;; setup company backends with company-bash and either company-shell
 ;; or bash-completion
@@ -39,7 +40,8 @@
       (add-hook 'completion-at-point-functions
                 'sh-tools-bash-completion nil 'local)))
   (cl-pushnew sh-tools-company-backends company-backends)
-  (setq-local company-transformers '(company-sort-by-backend-importance)))
+  (setq-local company-transformers
+              '(company-sort-by-backend-importance)))
 
 ;; with prefix, only complete for sourced / local functions
 (defun sh-tools-company-bash (arg)
