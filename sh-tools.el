@@ -88,7 +88,9 @@
 ;; enforce uft-8-unix on save
 (defun sh-tools-cleanup-buffer ()
   (unless (eq 'utf-8-unix buffer-file-coding-system)
-    (set-buffer-file-coding-system 'utf-8-unix)))
+    (set-buffer-file-coding-system 'utf-8-unix))
+  ;; align backslashes
+  (align-regexp (point-min) (point-max) "\\(\\s-*\\)\\\\\\s-*$"))
 
 ;; ------------------------------------------------------------
 
