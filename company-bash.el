@@ -56,7 +56,7 @@
   (save-excursion
     (goto-char (point-min))
     (let (srcs)
-      (while (search-forward "source" nil 'move)
+      (while (re-search-forward "\\_<\\(source\\|\\.\\)\\_>" nil 'move)
         (let ((syntax (syntax-ppss)))
           ;; ignore commented out / in strings
           (and (not (nth 3 syntax))
