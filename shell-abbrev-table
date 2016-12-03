@@ -7,7 +7,8 @@
     ("dnn" "2>&1 >/dev/null" nil :system t)
     ("dn2" "2>/dev/null" nil :system t)
     ("ddu" "ls | xargs -n 1 du -hs" nil :system t)
-    ("bitn" "https://bitbucket.org/nverno "nil :system t) 
+    ("bitn" "https://bitbucket.org/nverno " nil :system t) 
+    ("catg" ["cat | grep " 7 nil nil] expand-abbrev-hook :system t)
     ("gitn" "https://github.com/nverno" nil :system t) 
     ("gitp" "git pull" nil :system t) 
     ("suag" "sudo apt-get" nil :system t) 
@@ -24,8 +25,7 @@
     ("gitcln" "git clone https://github.com/nverno" nil :system t) 
     ("bitcln" "git clone https://bitbucket.org/nverno" nil :system t) 
     )
-  "Shells abbrevs."
-  :parents (list prog-mode-abbrev-table))
+  "Shells abbrevs.")
 
 (define-abbrev-table 'shell-mode-abbrev-table
   '(

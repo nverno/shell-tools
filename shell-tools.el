@@ -31,16 +31,17 @@
 (eval-when-compile
   (require 'cl-lib)
   (require 'nvp-macro)
-  (require 'pcomplete))
+  (require 'pcomplete)
+  (defvar yas-snippet-dirs))
+(autoload 'pcomplete--here "pcomplete")
+(autoload 'pcomplete-entries "pcomplete")
+(autoload 'expand-add-abbrevs "expand")
 
 (defvar shell-tools--dir nil)
 (when load-file-name
   (setq shell-tools--dir (file-name-directory load-file-name)))
 
-;; ------------------------------------------------------------
-;;; Install
-
-;;; Pcomplete
+;;--- Pcomplete ------------------------------------------------------
 
 (defun pcomplete/shell-mode/git ()
   (pcomplete-here
@@ -48,6 +49,8 @@
      "grep" "init" "log" "merge" "mv" "pull" "push" "rebase" "remote"
      "reset" "rm" "show" "status" "submodule" "tag"))
        
+  ;; FIXME: branches? cant use readline on windows, not sure its
+  ;; worth fixing
   (pcomplete-here
    (let ((last-cmd (nth (1- pcomplete-last) pcomplete-args)))
      (cond
@@ -65,8 +68,7 @@
     (start-process "clink" "*nvp-install*" "cmd.exe"
                    "clink" "autorun" "install")))
 
-;; ------------------------------------------------------------
-;;;; Shells
+;;--- Shells ---------------------------------------------------------
 
 ;; return some available shells
 (defun shell-tools-get-shells ()
@@ -99,12 +101,11 @@
         (compilation-read-command))
     (call-interactively 'compile)))
 
-(nvp-newline "shell-tools-newline-dwim" nil
+(nvp-newline shell-tools-newline-dwim nil
   :pairs (("{" "}") ("(" ")")))
 
-;; ------------------------------------------------------------
-;;; Abbrevs
-;
+;;--- Abbrevs --------------------------------------------------------
+
 ;; dont expand in strings or after [-:]
 (defun shell-tools-abbrev-expand-p ()
   (not (or (memq last-input-event '(?- ?:))
@@ -201,15 +202,7 @@
                    (insert " :system t)\n")))))
       (write-abbrev-file file ))))
 
-;; ------------------------------------------------------------
-;;; Setup
-
-;; FIXME: should be able to easily add to special abbrev list
-(autoload 'expand-add-abbrevs "expand")
-(eval-after-load 'shell
-  '(expand-add-abbrevs
-    shell-mode-abbrev-table
-    '(("catg" "cat  | grep " 5))))
+;;--- Setup ----------------------------------------------------------
 
 (eval-after-load 'yasnippet
   '(let ((dir (expand-file-name "snippets" shell-tools--dir))
@@ -218,6 +211,10 @@
      (unless (member dir dirs)
        (setq yas-snippet-dirs (delq nil (cons dir dirs))))
      (yas-load-directory dir)))
+
+;; -------------------------------------------------------------------
+
+(declare-function yas-load-directory "yasnippet")
 
 (provide 'shell-tools)
 ;;; shell-tools.el ends here
