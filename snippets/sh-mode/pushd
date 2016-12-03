@@ -4,4 +4,4 @@
 # --
 pushd $1 >/dev/null
 $0
-popd
+popd >/dev/null
