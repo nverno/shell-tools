@@ -1,0 +1,8 @@
+# -*- mode: snippet -*-
+# name: test-dir
+# key: testdir
+# --
+[[ ! -d "${1:$DEVEL}" ]] && (
+    printf "$1 not found... aborting\n"
+    exit 1
+)

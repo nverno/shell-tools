@@ -3,6 +3,6 @@
 # key: iff
 # expand-env: ((yas-indent-line 'fixed))
 # --
-if [ -f $1 ]; then
-    $2
-fi$0
+if [ ${1:!} -f $2 ]; then
+    $3
+fi
