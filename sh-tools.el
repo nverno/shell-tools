@@ -82,6 +82,55 @@
     (when font-lock-mode
       (font-lock-ensure (point-min) (point-max)))))
 
+;; -------------------------------------------------------------------
+;;; Interactive
+
+;; sh-script imenu
+(defvar sh-tools-function-re
+  (eval-when-compile
+    (concat
+     "\\(?:"
+     ;; function FOO()
+     "^\\s-*function\\s-+\\([[:alpha:]_][[:alnum:]_]*\\)\\s-*\\(?:()\\)?"
+     "\\|"
+     ;; FOO()
+     "^\\s-*\\([[:alpha:]_][[:alnum:]_]*\\)\\s-*()"
+     "\\)")))
+
+(defun sh-tools-beginning-of-defun (&optional arg)
+  (interactive "^p")
+  (or (not (eq this-command 'sh-tools-beginning-of-defun))
+      (eq last-command 'sh-tools-beginning-of-defun)
+      (and transient-mark-mode mark-active)
+      (push-mark))
+  (unless arg (setq arg 1))
+  (cond
+   ((> arg 0)
+    (while (and (> arg 0)
+                (re-search-backward sh-tools-function-re nil 'move))
+      (setq arg (1- arg))))
+   (t (while (and (< arg 0)
+                  (re-search-forward sh-tools-function-re nil))
+        (setq arg (1+ arg))))))
+
+;; move to beginning of next function if there is one
+(defun sh-tools-next-defun ()
+  (interactive)
+  (condition-case nil
+      (progn
+        (forward-line 1)
+        (sh-tools-beginning-of-defun -1)
+        (beginning-of-line))
+    (error (forward-line -1))))
+
+;;; Help
+
+(defun sh-tools-parse-man ()
+  ())
+(defun sh-tools-help-at-point ()
+  (interactive)
+  ())
+
 ;; ------------------------------------------------------------
 ;;; Cleanup
 
