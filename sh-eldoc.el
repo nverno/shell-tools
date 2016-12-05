@@ -35,7 +35,7 @@
 ;; ignore ':'
 (defvar sh-eldoc-builtins
   (nvp-re-opt
-   '("." "[" "alias" "bg" "bind" "break" "builtin" "case" "cd"
+   '("." "[" "[[" "alias" "bg" "bind" "break" "builtin" "case" "cd"
      "command" "compgen" "complete" "continue" "declare" "dirs"
      "disown" "echo" "enable" "eval" "exec" "exit" "export" "fc" "fg"
      "getopts" "hash" "help" "history" "if" "jobs" "kill" "let"
@@ -64,24 +64,27 @@
 (defun sh-eldoc--man (cmd)
   (set-process-sentinel 
    (start-process-shell-command
-    "man" "*sh-eldoc*" (concat "man " cmd " | col -b"))
+    "man" "*sh-eldoc*" (concat "man --names-only " cmd " | col -b"))
    #'(lambda (p _m)
-       (when (zerop (process-exit-status p))
-         ;; parse man output to get synopsis
-         (with-current-buffer "*sh-eldoc*"
-           (goto-char (point-min))
-           (when (search-forward "SYNOPSIS" nil 'move)
-             (forward-line)
-             (skip-chars-forward " \t")
-             ;; put result in cache
-             (puthash
-              cmd 
-              (concat
-               (propertize cmd 'face 'font-lock-function-name-face) ":"
-               (buffer-substring
-                (+ (length cmd) (point)) (point-at-eol)))
-              sh-eldoc-cache)
-             (erase-buffer)))))))
+       (if (zerop (process-exit-status p))
+           ;; parse man output to get synopsis
+           (with-current-buffer "*sh-eldoc*"
+             (goto-char (point-min))
+             (when (search-forward "SYNOPSIS" nil 'move)
+               (forward-line)
+               (skip-chars-forward " \t")
+               ;; put result in cache
+               (puthash
+                cmd 
+                (concat
+                 (propertize cmd 'face 'font-lock-function-name-face) ":"
+                 (and (looking-at "[^ \t]+[ \t]+\\([^\n]+\\)")
+                      (match-string 1))
+                 ;; (buffer-substring
+                 ;;  (+ (length cmd) (point)) (point-at-eol))
+                 )
+                sh-eldoc-cache)
+               (erase-buffer)))))))
 
 ;; get doc string from man
 (defun sh-eldoc-man-string (cmd)
