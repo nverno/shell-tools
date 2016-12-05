@@ -30,6 +30,7 @@
   (require 'nvp-macro))
 (require 'eldoc)
 (autoload 'sh-beginning-of-command "sh-script")
+(autoload 'sh-tools-function-name "sh-tools")
 
 ;; ignore ':'
 (defvar sh-eldoc-builtins
@@ -45,8 +46,8 @@
   
 (defvar sh-eldoc-cache (make-hash-table :test 'equal))
 
-;; return formatted doc string for minibuffer
-(defun sh-eldoc-doc-string (cmd)
+;; return formatted doc string for bash builtins
+(defun sh-eldoc-builtin-string (cmd)
   (or (gethash cmd sh-eldoc-cache)
       (let ((str (shell-command-to-string
                   (concat "bash -c 'help -s " cmd "'"))))
@@ -58,6 +59,44 @@
          0 (length cmd)
          (list 'face 'font-lock-function-name-face) str)
         (puthash cmd str sh-eldoc-cache))))
+
+;; get synopsis from man output
+(defun sh-eldoc--man (cmd)
+  (set-process-sentinel 
+   (start-process-shell-command
+    "man" "*sh-eldoc*" (concat "man " cmd " | col -b"))
+   #'(lambda (p _m)
+       (when (zerop (process-exit-status p))
+         ;; parse man output to get synopsis
+         (with-current-buffer "*sh-eldoc*"
+           (goto-char (point-min))
+           (when (search-forward "SYNOPSIS" nil 'move)
+             (forward-line)
+             (skip-chars-forward " \t")
+             ;; put result in cache
+             (puthash
+              cmd 
+              (concat
+               (propertize cmd 'face 'font-lock-function-name-face) ":"
+               (buffer-substring
+                (+ (length cmd) (point)) (point-at-eol)))
+              sh-eldoc-cache)
+             (erase-buffer)))))))
+
+;; get doc string from man
+(defun sh-eldoc-man-string (cmd)
+  (or (gethash cmd sh-eldoc-cache)
+      (ignore (sh-eldoc--man cmd))))
+
+;;;###autoload
+(defun sh-eldoc-function ()
+  "Return eldoc string for bash functions (builtins and those avaliable
+from `man %s'."
+  (let ((func (sh-tools-function-name)))
+    (and func
+         (if (string-match sh-eldoc-builtins func)
+             (sh-eldoc-builtin-string func)
+           (sh-eldoc-man-string func)))))
 
 (provide 'sh-eldoc)
 ;;; sh-eldoc.el ends here

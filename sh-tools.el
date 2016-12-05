@@ -6,6 +6,40 @@
   (defvar company-backends))
 (require 'shell-tools)
 
+;; -------------------------------------------------------------------
+;;; Utils
+
+;; name of current function
+(defun sh-tools-function-name ()
+  (let ((ppss (syntax-ppss))
+        (start (or (cdr (bounds-of-thing-at-point 'symbol)) (point))))
+    ;; ignore comments
+    (when (not (nth 4 ppss))
+      (save-excursion
+        (catch 'done
+          (while t
+            (skip-chars-backward "^:<>)(|&\`;\["
+                                 (line-beginning-position))
+            (if (nth 3 (syntax-ppss))
+                ;; move backward out of enclosing string
+                (up-list -1 t t)
+              (throw 'done nil))))
+        (skip-syntax-forward " " start)
+        (cond
+         ;; '[[' or '['
+         ((looking-back "[^[]\\(\\[+\\)[ \t]"
+                        (line-beginning-position))
+          (match-string 1))
+         ;; 'if' => if in situation like 'if ! hash', then
+         ;; return 'hash'
+         ((looking-at-p "if\\>")
+          (if (looking-at "if[ \t]+!?[ \t]*\\([[:alnum:]]+\\)")
+              (match-string 1)
+            "if"))
+         ;; otherwise, return first symbol
+         (t (and (looking-at "[:_\[\.[:alnum:]]+")
+                 (match-string 0))))))))
+
 ;; ------------------------------------------------------------
 ;;; Completion
 
