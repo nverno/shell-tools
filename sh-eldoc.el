@@ -1,4 +1,4 @@
-;;; sh-eldoc --- eldoc  -*- lexical-binding: t; -*-
+;;; sh-eldoc --- eldoc for bash/sh  -*- lexical-binding: t; -*-
 
 ;; This is free and unencumbered software released into the public domain.
 
@@ -25,32 +25,25 @@
 ;; Floor, Boston, MA 02110-1301, USA.
 
 ;;; Commentary:
+
+;; Notes:
+;; - help strings are cached
+;; - bash builtins run synchronously
+;; - others run async, so help will show up after moving point
+;;   in region more than once
+
 ;;; Code:
 (eval-when-compile
   (require 'nvp-macro))
+(require 'sh-help)
 (require 'eldoc)
-(autoload 'sh-beginning-of-command "sh-script")
-(autoload 'sh-tools-function-name "sh-tools")
 
-;; ignore ':'
-(defvar sh-eldoc-builtins
-  (nvp-re-opt
-   '("." "[" "[[" "alias" "bg" "bind" "break" "builtin" "case" "cd"
-     "command" "compgen" "complete" "continue" "declare" "dirs"
-     "disown" "echo" "enable" "eval" "exec" "exit" "export" "fc" "fg"
-     "getopts" "hash" "help" "history" "if" "jobs" "kill" "let"
-     "local" "logout" "popd" "printf" "pushd" "pwd" "read" "readonly"
-     "return" "set" "shift" "shopt" "source" "suspend" "test" "times"
-     "trap" "type" "typeset" "ulimit" "umask" "unalias" "unset"
-     "until" "wait" "while")))
-  
 (defvar sh-eldoc-cache (make-hash-table :test 'equal))
 
 ;; return formatted doc string for bash builtins
 (defun sh-eldoc-builtin-string (cmd)
   (or (gethash cmd sh-eldoc-cache)
-      (let ((str (shell-command-to-string
-                  (concat "bash -c 'help -s " cmd "'"))))
+      (let ((str (sh-help-bash-builtin-sync cmd 'synopsis)))
         ;; remove 'cmd: ' and trailing newline
         (setq str (substring str (+ 2 (length cmd))
                              (1- (length str))))
@@ -60,31 +53,25 @@
          (list 'face 'font-lock-function-name-face) str)
         (puthash cmd str sh-eldoc-cache))))
 
-;; get synopsis from man output
+;; get synopsis from man output asynchronously and cache it
 (defun sh-eldoc--man (cmd)
-  (set-process-sentinel 
-   (start-process-shell-command
-    "man" "*sh-eldoc*" (concat "man --names-only " cmd " | col -b"))
-   #'(lambda (p _m)
-       (if (zerop (process-exit-status p))
-           ;; parse man output to get synopsis
-           (with-current-buffer "*sh-eldoc*"
-             (goto-char (point-min))
-             (when (search-forward "SYNOPSIS" nil 'move)
-               (forward-line)
-               (skip-chars-forward " \t")
-               ;; put result in cache
-               (puthash
-                cmd 
-                (concat
-                 (propertize cmd 'face 'font-lock-function-name-face) ":"
-                 (and (looking-at "[^ \t]+[ \t]+\\([^\n]+\\)")
-                      (match-string 1))
-                 ;; (buffer-substring
-                 ;;  (+ (length cmd) (point)) (point-at-eol))
-                 )
-                sh-eldoc-cache)
-               (erase-buffer)))))))
+  (sh-with-man-help cmd "*sh-eldoc*"
+    (goto-char (point-min))
+    (when (search-forward "SYNOPSIS" nil 'move)
+      (forward-line)
+      (skip-chars-forward " \t")
+      ;; put result in cache
+      (puthash
+       cmd 
+       (concat
+        (propertize cmd 'face 'font-lock-function-name-face) ":"
+        (and (looking-at "[^ \t]+[ \t]+\\([^\n]+\\)")
+             (match-string 1))
+        ;; (buffer-substring
+        ;;  (+ (length cmd) (point)) (point-at-eol))
+        )
+       sh-eldoc-cache)
+      (erase-buffer))))
 
 ;; get doc string from man
 (defun sh-eldoc-man-string (cmd)
@@ -97,9 +84,9 @@
 from `man %s'."
   (let ((func (sh-tools-function-name)))
     (and func
-         (if (string-match sh-eldoc-builtins func)
-             (sh-eldoc-builtin-string func)
-           (sh-eldoc-man-string func)))))
+         (if (string-match-p sh-help-bash-builtins func)
+             (sh-eldoc-builtin-string func) ;; synchronously
+           (sh-eldoc-man-string func)))))   ;; async
 
 (provide 'sh-eldoc)
 ;;; sh-eldoc.el ends here

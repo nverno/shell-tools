@@ -33,12 +33,12 @@
           (match-string 1))
          ;; 'if' => if in situation like 'if ! hash', then
          ;; return 'hash'
-         ((looking-at-p "if\\>")
-          (if (looking-at "if[ \t]+!?[ \t]*\\([[:alnum:]]+\\)")
+         ((looking-at-p "if\\_>")
+          (if (looking-at "if[ \t]+!?[ \t]*\\([-+[:alnum:]]+\\)")
               (match-string 1)
             "if"))
          ;; otherwise, return first symbol
-         (t (and (looking-at "[:_\[\.[:alnum:]]+")
+         (t (and (looking-at "[:+_\[\.[:alnum:]-]+")
                  (match-string 0))))))))
 
 ;; ------------------------------------------------------------
