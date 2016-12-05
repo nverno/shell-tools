@@ -3,7 +3,8 @@
 (eval-when-compile
   (require 'nvp-macro)
   (require 'cl-lib)
-  (defvar company-backends))
+  (defvar company-backends)
+  (defvar company-transformers))
 (require 'shell-tools)
 
 ;; -------------------------------------------------------------------
