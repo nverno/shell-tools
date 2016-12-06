@@ -26,10 +26,9 @@
 
 ;;; Commentary:
 
-;; - Within '[' or '[[' => show switches
-;; - Formatted strings?
+;; - Within '[' or '[[' => show help for switches
 ;; - On shell builtin   => bash -c 'help %s'
-;; - Otherwise          => try man or whatis?
+;; - Otherwise          => use man
 
 ;;; Code:
 (eval-when-compile
@@ -37,6 +36,7 @@
   (require 'cl-lib))
 (require 'nvp-read) ;; parse 'man' stuff
 (autoload 'sh-tools-function-name "sh-tools")
+(autoload 'sh-tools-conditional-switch "sh-tools")
 
 ;; ignore ':', not symbolized to match strings
 (defvar sh-help-bash-builtins
@@ -122,6 +122,7 @@
               (with-current-buffer buffer
                 ,@body)))))))
 
+;; -------------------------------------------------------------------
 ;;; Parse output
 
 (defsubst sh-help--builtin-string ()
@@ -138,6 +139,7 @@
 (defsubst sh-help--cond-switches ()
   (nvp-read-man-switches "^CONDITIONAL EXP" "\\s-+-" "^[[:alpha:]]"))
 
+;; -------------------------------------------------------------------
 ;;; Cache / Lookup
 
 (defvar sh-help-cache (make-hash-table :test 'equal))
@@ -215,8 +217,12 @@
       (sh-help--conditional-string switch))))
 
 ;; popup help for thing at point
-;; with prefix, show help for thing directly at point
-;; otherwise, determine current function and find help for that
+;; - with C-u, show help for thing directly at point
+;; - with C-u C-u, prompt for 'man' section, display result in popup
+;; and recache result
+;; - default, determine current function (not thing-at-point)
+;; and find help for that.  If in [[ ... ]] or [ ... ],
+;; show help for current switch, eg. "-d", or all possible switches
 ;;;###autoload
 (defun sh-help-at-point (arg)
   (interactive "P")
