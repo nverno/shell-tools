@@ -35,6 +35,7 @@
 (eval-when-compile
   (require 'nvp-macro)
   (require 'cl-lib))
+(require 'nvp-read) ;; parse 'man' stuff
 (autoload 'sh-tools-function-name "sh-tools")
 
 ;; ignore ':', not symbolized to match strings
@@ -129,54 +130,18 @@
   ;; (forward-line 1)
   (buffer-substring (point) (point-max)))
 
-;; make indentation based regexp
-(defsubst sh-help--indent-re ()
-  (concat "^\\(?:[ \t]*$\\|"
-          (buffer-substring
-           (point)
-           (save-excursion
-             (progn (back-to-indentation) (point))))
-          "\\)"))
-
-;; return section from man doc, default "DESCRIPTION"
 (defsubst sh-help--man-string (&optional section)
-  (goto-char (point-min))
-  (when (re-search-forward
-         (concat "^" (or section "DESCRIPTION")) nil 'move)
-    (forward-line)
-    (let ((start (point))
-          (indent-re (sh-help--indent-re)))
-      (while (looking-at-p indent-re)
-        (forward-line))
-      (buffer-substring start (1- (point))))))
+  (setq section (if section (concat "^" section) "^DESCRIPTION"))
+  (nvp-read-man-string section))
 
-;; condense conditional expression switches
+;; parse 'man bash' conditional switches for '[[' and '['
 (defsubst sh-help--cond-switches ()
-  (goto-char (point-min))
-  (when (re-search-forward "^CONDITIONAL")
-    (forward-line)
-    (let* ((indent-re (sh-help--indent-re))
-           (flag-re (concat indent-re "\\([^ \t][^ \\{2,\\}\t\n\r]*\\)"))
-           (cont-re "\t[ \t]*\\|^$")
-           res key start)
-      (when (re-search-forward (concat indent-re "-"))
-        (beginning-of-line)
-        (while (not (looking-at-p "^[[:alpha:]]"))
-          (if (not (looking-at flag-re))
-              (forward-line)
-            (setq key (match-string 1))
-            ;; get description for key
-            (setq start (point))
-            (while (looking-at-p cont-re)
-              (forward-line))
-            (push (cons key (buffer-substring start (1- (point))))
-                  res))))
-      (nreverse res))))
+  (nvp-read-man-switches "^CONDITIONAL EXP" "\\s-+-" "^[[:alpha:]]"))
 
-;; -------------------------------------------------------------------
-;;; Help at point
+;;; Cache / Lookup
 
 (defvar sh-help-cache (make-hash-table :test 'equal))
+(defvar sh-help-conditional-cache (make-hash-table :test 'equal))
 
 ;; return help string for CMD synchronously, cache result
 (defun sh-help--function-string (cmd &optional section recache)
@@ -190,6 +155,40 @@
               (puthash cmd res sh-help-cache)
               res)
           (erase-buffer)))))
+
+;; return conditional help string
+(defun sh-help--conditional-string (switch)
+  (or (gethash switch sh-help-conditional-cache)
+      (gethash "all" sh-help-conditional-cache)
+      (progn
+        (sh-help--cache-conditionals)
+        (sh-help--conditional-string switch))))
+
+;; make sh-help-conditional-cache
+(defun sh-help--cache-conditionals ()
+  (sh-with-help "bash" 'sync "*sh-help*"
+    (let ((entries (sh-help--cond-switches)))
+      (dolist (entry entries)
+        ;; key by -%s if possible
+        (if (string-match "^\\(-[[:alnum:]]+\\).*" (car entry))
+            (puthash (match-string 1 (car entry))
+                     (concat (car entry) "\n" (cdr entry))
+                     sh-help-conditional-cache)
+          ;; otherwise just use entry, for things like
+          ;; "string = string" from man
+          (puthash (car entry) (cdr entry)
+                   sh-help-conditional-cache)))
+      ;; make one big entry for everything
+      (puthash
+       "all" (mapconcat
+              #'(lambda (entry) (concat (car entry) "\n" (cdr entry)))
+              entries
+              "\n")
+       sh-help-conditional-cache))
+    (erase-buffer)))
+
+;; -------------------------------------------------------------------
+;;; Help at point
 
 ;; show help in popup tooltip for CMD
 ;; show SECTION from 'man', prompting with prefix
@@ -205,11 +204,15 @@
            recache)
           (format "No help found for %s" cmd)))))
 
-;; conditional expressions: '[[' '['
-(defun sh-help-conditional ()
-  (interactive)
-  (or (gethash "conditionals" sh-help-cache)
-      (sh-help--function-string "bash" "CONDITIONAL EXPRESSIONS")))
+;; display help for conditional expressions: '[[' '['
+(defun sh-help-conditional (switch &optional ignore)
+  (interactive
+   (if (x-hide-tip)
+       (list nil 'ignore)
+     (list (completing-read "Switch: " sh-help-conditional-cache))))
+  (when (not ignore)
+    (nvp-with-toggled-tip
+      (sh-help--conditional-string switch))))
 
 ;; popup help for thing at point
 ;; with prefix, show help for thing directly at point
@@ -222,7 +225,8 @@
     (let ((cmd (sh-tools-function-name)))
       (cond
        ((member cmd '("[[" "["))
-        (sh-help-command-at-point "bash" nil "CONDITIONAL EXPRESSIONS"))
+        ;; return help for current switch or all if not found
+        (sh-help-conditional (sh-tools-conditional-switch)))
        (t
         ;; with C-u C-u prompt for 'man' section and recache
         (sh-help-command-at-point

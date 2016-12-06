@@ -41,6 +41,14 @@
          (t (and (looking-at "[:+_\[\.[:alnum:]-]+")
                  (match-string 0))))))))
 
+;; get conditional switch
+(defun sh-tools-conditional-switch ()
+  (save-excursion
+    (skip-chars-backward "^\[" (line-beginning-position))
+    (and (not (bolp))
+         (looking-at "[ !]*\\(-[[:alpha:]]+\\)")
+         (match-string 1))))
+
 ;; ------------------------------------------------------------
 ;;; Completion
 
