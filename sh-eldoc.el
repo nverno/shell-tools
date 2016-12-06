@@ -55,7 +55,7 @@
 
 ;; get synopsis from man output asynchronously and cache it
 (defun sh-eldoc--man (cmd)
-  (sh-with-man-help cmd "*sh-eldoc*"
+  (sh-with-man-help cmd nil "*sh-eldoc*"
     (goto-char (point-min))
     (when (search-forward "SYNOPSIS" nil 'move)
       (forward-line)
@@ -84,9 +84,9 @@
 from `man %s'."
   (let ((func (sh-tools-function-name)))
     (and func
-         (if (string-match-p sh-help-bash-builtins func)
-             (sh-eldoc-builtin-string func) ;; synchronously
-           (sh-eldoc-man-string func)))))   ;; async
+         (sh-with-bash/man func
+           (sh-eldoc-builtin-string func) ;; synchronously
+           (sh-eldoc-man-string func))))) ;; async
 
 (provide 'sh-eldoc)
 ;;; sh-eldoc.el ends here

@@ -51,7 +51,7 @@
         "trap" "type" "typeset" "ulimit" "umask" "unalias" "unset"
         "until" "wait" "while")
       'no-symbol)
-     "\\_>")))
+     "\\'")))
   
 ;; -------------------------------------------------------------------
 ;;; Utilities
@@ -62,47 +62,171 @@
   (shell-command-to-string
    (concat "bash -c 'help " (and synopsis "-s ") cmd "'")))
 
-(defsubst sh-help-bash-builtin (cmd &optional buffer)
-  (start-process-shell-command
-   "bash" (or buffer "*sh-help*")
-   (concat "bash -c 'help " (regexp-quote cmd) "'")))
+(defsubst sh-help-bash-builtin (cmd &optional sync buffer)
+  (let ((cmd (concat "bash -c 'help " cmd "'"))
+        (buffer (or buffer "*sh-help*")))
+    (if sync
+        (call-process-shell-command cmd nil buffer)
+      (start-process-shell-command "bash" buffer cmd))))
 
 ;; output to BUFFER, return process
 ;; man --names-only %s | col -b
-(defsubst sh-help-man (cmd &optional buffer)
-  (start-process-shell-command
-   "man" (or buffer "*sh-help*")
-   (concat "man --names-only " (regexp-quote cmd) " | col -b")))
+(defsubst sh-help-man (cmd &optional sync buffer)
+  (let ((cmd (concat "man --names-only "
+                     (regexp-quote cmd) " | col -b")))
+    (if sync
+        (call-process-shell-command
+         cmd nil (or buffer "*sh-help*"))
+      (start-process-shell-command
+       "man" (or buffer "*sh-help*") cmd))))
 
-(defmacro sh-with-man-help (cmd &optional buffer &rest body)
+;; do BODY in buffer with man output
+(defmacro sh-with-man-help (cmd &optional sync buffer &rest body)
   (declare (indent defun))
-  `(set-process-sentinel
-    (sh-help-man ,cmd ,buffer)
-    #'(lambda (p _m)
-        (when (zerop (process-exit-status p))
-          (with-current-buffer ,buffer
-            ,@body)))))
+  `(let ((buffer (or ,buffer "*sh-help*")))
+     ,(if sync
+          `(with-current-buffer buffer
+             (sh-help-man ,cmd 'sync (current-buffer)))
+        `(set-process-sentinel
+          (sh-help-man ,cmd nil buffer)
+          #'(lambda (p _m)
+              (when (zerop (process-exit-status p))
+                (with-current-buffer buffer
+                  ,@body)))))))
 
+;; if bash builtin do BASH else MAN
 (defmacro sh-with-bash/man (cmd bash &rest man)
   (declare (indent 2) (indent 1))
   `(if (string-match-p sh-help-bash-builtins ,cmd)
        ,bash
      ,@man))
 
-;; process BODY in output of help for CMD async. Help output is
+;; process BODY in output of help for CMD. Help output is
 ;; either from 'bash help' for bash builtins or 'man'.
-(defmacro sh-with-help (cmd &optional buffer &rest body)
+(defmacro sh-with-help (cmd &optional sync buffer &rest body)
   (declare (indent defun) (debug t))
-  `(set-process-sentinel
-    (apply (sh-with-bash/man ,cmd 'sh-help-bash-builtin 'sh-help-man)
-           ,cmd ,buffer)
-    #'(lambda (p _m)
-        (when (zerop (process-exit-status p))
-          (with-current-buffer ,(or buffer "*sh-help*")
-            ,@body)))))
+  `(let ((buffer (get-buffer-create (or ,buffer "*sh-help*"))))
+     (if ,sync
+         (with-current-buffer buffer
+             (apply (sh-with-bash/man ,cmd
+                      'sh-help-bash-builtin
+                      'sh-help-man)
+                    ,cmd 'sync `(,buffer))
+             ,@body)
+       (set-process-sentinel
+        (apply (sh-with-bash/man ,cmd 'sh-help-bash-builtin 'sh-help-man)
+               ,cmd nil `(,buffer))
+        #'(lambda (p _m)
+            (when (zerop (process-exit-status p))
+              (with-current-buffer buffer
+                ,@body)))))))
+
+;;; Parse output
+
+(defsubst sh-help--builtin-string ()
+  (goto-char (point-min))
+  ;; skip synopsis
+  ;; (forward-line 1)
+  (buffer-substring (point) (point-max)))
+
+;; make indentation based regexp
+(defsubst sh-help--indent-re ()
+  (concat "^\\(?:[ \t]*$\\|"
+          (buffer-substring
+           (point)
+           (save-excursion
+             (progn (back-to-indentation) (point))))
+          "\\)"))
+
+;; return section from man doc, default "DESCRIPTION"
+(defsubst sh-help--man-string (&optional section)
+  (goto-char (point-min))
+  (when (re-search-forward
+         (concat "^" (or section "DESCRIPTION")) nil 'move)
+    (forward-line)
+    (let ((start (point))
+          (indent-re (sh-help--indent-re)))
+      (while (looking-at-p indent-re)
+        (forward-line))
+      (buffer-substring start (1- (point))))))
+
+;; condense conditional expression switches
+(defsubst sh-help--cond-switches ()
+  (goto-char (point-min))
+  (when (re-search-forward "^CONDITIONAL")
+    (forward-line)
+    (let* ((indent-re (sh-help--indent-re))
+           (flag-re (concat indent-re "\\([^ \t][^ \\{2,\\}\t\n\r]*\\)"))
+           (cont-re "\t[ \t]*\\|^$")
+           res key start)
+      (when (re-search-forward (concat indent-re "-"))
+        (beginning-of-line)
+        (while (not (looking-at-p "^[[:alpha:]]"))
+          (if (not (looking-at flag-re))
+              (forward-line)
+            (setq key (match-string 1))
+            ;; get description for key
+            (setq start (point))
+            (while (looking-at-p cont-re)
+              (forward-line))
+            (push (cons key (buffer-substring start (1- (point))))
+                  res))))
+      (nreverse res))))
 
 ;; -------------------------------------------------------------------
 ;;; Help at point
+
+(defvar sh-help-cache (make-hash-table :test 'equal))
+
+;; return help string for CMD synchronously, cache result
+(defun sh-help--function-string (cmd &optional section recache)
+  (or (and (not recache)
+           (gethash cmd sh-help-cache))
+      (sh-with-help cmd 'sync "*sh-help*"
+        (prog1
+            (let ((res (sh-with-bash/man cmd
+                         (sh-help--builtin-string)
+                         (sh-help--man-string section))))
+              (puthash cmd res sh-help-cache)
+              res)
+          (erase-buffer)))))
+
+;; show help in popup tooltip for CMD
+;; show SECTION from 'man', prompting with prefix
+(defun sh-help-command-at-point (cmd &optional prompt section recache)
+  (interactive (list (thing-at-point 'symbol)))
+  (when cmd
+    (nvp-with-toggled-tip
+      (or (sh-help--function-string
+           cmd
+           (if prompt
+               (read-from-minibuffer "Man Section: " "DESCRIPTION")
+             section)
+           recache)
+          (format "No help found for %s" cmd)))))
+
+;; conditional expressions: '[[' '['
+(defun sh-help-conditional ()
+  (interactive)
+  (or (gethash "conditionals" sh-help-cache)
+      (sh-help--function-string "bash" "CONDITIONAL EXPRESSIONS")))
+
+;; popup help for thing at point
+;; with prefix, show help for thing directly at point
+;; otherwise, determine current function and find help for that
+;;;###autoload
+(defun sh-help-at-point (arg)
+  (interactive "P")
+  (if (equal arg '(4))
+      (call-interactively 'sh-help-command-at-point)
+    (let ((cmd (sh-tools-function-name)))
+      (cond
+       ((member cmd '("[[" "["))
+        (sh-help-command-at-point "bash" nil "CONDITIONAL EXPRESSIONS"))
+       (t
+        ;; with C-u C-u prompt for 'man' section and recache
+        (sh-help-command-at-point
+         cmd (equal arg '(16)) nil 'recache))))))
 
 (provide 'sh-help)
 ;;; sh-help.el ends here
