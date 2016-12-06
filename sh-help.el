@@ -37,6 +37,7 @@
 (require 'nvp-read) ;; parse 'man' stuff
 (autoload 'sh-tools-function-name "sh-tools")
 (autoload 'sh-tools-conditional-switch "sh-tools")
+(autoload 'nvp-basic-temp-binding "nvp-basic")
 
 ;; ignore ':', not symbolized to match strings
 (defvar sh-help-bash-builtins
@@ -192,6 +193,12 @@
 ;; -------------------------------------------------------------------
 ;;; Help at point
 
+(defsubst sh-help-more-help (cmd)
+  (interactive)
+  (sh-with-bash/man cmd
+    (man "bash-builtins")
+    (man cmd)))
+
 ;; show help in popup tooltip for CMD
 ;; show SECTION from 'man', prompting with prefix
 (defun sh-help-command-at-point (cmd &optional prompt section recache)
@@ -204,7 +211,11 @@
                (read-from-minibuffer "Man Section: " "DESCRIPTION")
              section)
            recache)
-          (format "No help found for %s" cmd)))))
+          (format "No help found for %s" cmd))
+      :help-fn #'(lambda ()
+                   (interactive)
+                   (x-hide-tip)
+                   (sh-help-more-help cmd)))))
 
 ;; display help for conditional expressions: '[[' '['
 (defun sh-help-conditional (switch &optional ignore)
