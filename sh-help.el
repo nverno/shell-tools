@@ -30,6 +30,9 @@
 ;; - On shell builtin   => bash -c 'help %s'
 ;; - Otherwise          => use man
 
+;; TODO:
+;; - ${} formatting
+
 ;;; Code:
 (eval-when-compile
   (require 'nvp-macro)
