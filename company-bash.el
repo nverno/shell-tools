@@ -87,6 +87,7 @@
     (when srcs
       (mapc
        #'(lambda (file)
+           (setq file (substitute-in-file-name file))
            (and (file-exists-p file)
                 (with-current-buffer (find-file-noselect file)
                   (and (eq major-mode 'sh-mode)
