@@ -42,6 +42,7 @@
 (autoload 'sh-tools-function-name "sh-tools")
 (autoload 'sh-tools-conditional-switch "sh-tools")
 (autoload 'nvp-basic-temp-binding "nvp-basic")
+(autoload 'pos-tip-show "pos-tip")
 
 ;; ignore ':', not symbolized to match strings
 (defvar sh-help-bash-builtins
