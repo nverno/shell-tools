@@ -32,6 +32,7 @@
 
 ;; TODO:
 ;; - ${} formatting
+;; - special variables
 
 ;;; Code:
 (eval-when-compile

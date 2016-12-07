@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: ifsrc
+# key: ifsrc
+# --
+[[ -r "${1:$HOME/${2:poop}}" ]] && . "$1"

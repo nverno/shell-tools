@@ -54,7 +54,7 @@
         (skip-syntax-forward " " start)
         (cond
          ;; '[[' or '['
-         ((looking-back "[^[]\\(\\[+\\)[ \t]*"
+         ((looking-back "\\(?:^\\|[^[]\\)\\(\\[+\\)[ \t]*"
                         (line-beginning-position))
           (match-string 1))
          ;; 'if' => if in situation like 'if ! hash', then
