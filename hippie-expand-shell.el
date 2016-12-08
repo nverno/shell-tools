@@ -30,7 +30,6 @@
 
 ;;; Code:
 (eval-when-compile
-  (require 'nvp-macro)
   (require 'cl-lib))
 (require 'hippie-exp)
 (declare-function eshell-beginning-of-input "esh-mode")
