@@ -42,6 +42,9 @@
     (eshell-mode . eshell-history-ring)))
 
 ;; functions to return point at beginning of input line
+(defvar-local he-shell-bol nil)
+
+;; for eshell
 (defsubst he-shell-eshell-bol ()
   (marker-position (eshell-beginning-of-input)))
 
@@ -49,16 +52,12 @@
   '((shell-mode . comint-line-beginning-position)
     (eshell-mode . he-shell-eshell-bol)))
 
-(defvar-local he-shell-bol nil)
-
 ;; history candidates, eg eshell-history-ring, comint-input-ring
 (defvar-local he-shell-history-ring nil)
 
 ;; current matches for candidate, to cycle through
 (defvar-local he-shell--matches ())
 (defvar-local he-shell--index 0)
-
-(defun try-expand-shell-history-p ())
 
 ;; Hippie expansion from shell (comint) history
 ;; OLD must be nil on first call to function, and t for
