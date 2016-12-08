@@ -75,7 +75,8 @@
                         he-search-string
                         (ring-elements (symbol-value
                                         he-shell-history-ring)))
-                       :test 'string=))))
+                       :test 'string=
+                       :from-end t))))
          (when he-shell--matches
            (setq expansion (nth he-shell--index he-shell--matches))
            (setq he-shell--index (1+ he-shell--index))
