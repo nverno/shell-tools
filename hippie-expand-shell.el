@@ -35,45 +35,72 @@
 (require 'hippie-exp)
 (require 'comint)
 
+;; mapping for shells to history rings
+(defvar he-shell-history-alist
+  '((shell-mode . comint-input-ring)
+    (eshell-mode . eshell-history-ring)))
+
+;; functions to return point at beginning of input line
+(defsubst he-shell-eshell-bol ()
+  (marker-position (eshell-beginning-of-input)))
+
+(defvar he-shell-bol-alist
+  '((shell-mode . comint-line-beginning-position)
+    (eshell-mode . he-shell-eshell-bol)))
+
+(defvar-local he-shell-bol nil)
+
+;; history candidates, eg eshell-history-ring, comint-input-ring
+(defvar-local he-shell-history-ring nil)
+
 ;; current matches for candidate, to cycle through
-(defvar-local he-comint-matches ())
-(defvar-local he-comint-index 0)
+(defvar-local he-shell--matches ())
+(defvar-local he-shell--index 0)
+
+(defun try-expand-shell-history-p ())
 
 ;; Hippie expansion from shell (comint) history
 ;; OLD must be nil on first call to function, and t for
 ;; successive expansions.
 ;;;###autoload
-(defun try-expand-comint-history (old)
-  (and comint-input-ring
+(defun try-expand-shell-history (old)
+  (and he-shell-history-ring
        (let (expansion)
          (unless old
-           (he-init-string (comint-line-beginning-position) (point))
-           (setq he-comint-index 0)
-           (setq he-comint-matches
+           (he-init-string (funcall he-shell-bol) (point))
+           (setq he-shell--index 0)
+           (setq he-shell--matches
                  (and (not (equal "" he-search-string))
                       (cl-remove-duplicates
                        (all-completions
                         he-search-string
-                        (ring-elements comint-input-ring))
+                        (ring-elements (symbol-value
+                                        he-shell-history-ring)))
                        :test 'string=))))
-         (when he-comint-matches
-           (setq expansion (nth he-comint-index he-comint-matches))
-           (setq he-comint-index (1+ he-comint-index))
+         (when he-shell--matches
+           (setq expansion (nth he-shell--index he-shell--matches))
+           (setq he-shell--index (1+ he-shell--index))
            ;; Setting this cycles it, so other try- functions aren't
            ;; called
-           ;; (and (> he-comint-index (1- (length he-comint-matches)))
-           ;;      (setq he-comint-index 0))
+           ;; (and (> he-shell--index (1- (length he-shell--matches)))
+           ;;      (setq he-shell--index 0))
            )
          (if (not expansion)
              (ignore (and old (he-reset-string)))
            (he-substitute-string expansion t)))))
 
 ;;;###autoload
-(defun hippie-expand-shell-setup ()
+(defun hippie-expand-shell-setup (&optional history bol-fn)
   (interactive)
-  (make-local-variable 'hippie-expand-try-functions-list)
-  (add-to-list 'hippie-expand-try-functions-list
-               'try-expand-comint-history))
+  (let ((history (or history
+                     (cdr (assoc major-mode he-shell-history-alist))))
+        (bol (or bol-fn (cdr (assoc major-mode he-shell-bol-alist)))))
+    (when (and bol history)
+      (setq-local he-shell-history-ring history)
+      (setq-local he-shell-bol bol)
+      (make-local-variable 'hippie-expand-try-functions-list)
+      (add-to-list 'hippie-expand-try-functions-list
+                   'try-expand-shell-history))))
 
 (provide 'hippie-expand-shell)
 ;;; hippie-expand-shell.el ends here
