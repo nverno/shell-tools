@@ -26,14 +26,15 @@
 
 ;;; Commentary:
 
-;; Hippie expansion from shell (comint) history
+;; Hippie expansion for shell history rings
 
 ;;; Code:
 (eval-when-compile
   (require 'nvp-macro)
   (require 'cl-lib))
 (require 'hippie-exp)
-(require 'comint)
+(declare-function eshell-beginning-of-input "esh-mode")
+(declare-function comint-line-beginning-position "comint")
 
 ;; mapping for shells to history rings
 (defvar he-shell-history-alist
