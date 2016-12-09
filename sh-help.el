@@ -41,6 +41,7 @@
 (require 'nvp-read) ;; parse 'man' stuff
 (autoload 'sh-tools-function-name "sh-tools")
 (autoload 'sh-tools-conditional-switch "sh-tools")
+(autoload 'Man-build-section-alist "man")
 (autoload 'nvp-basic-temp-binding "nvp-basic")
 (autoload 'pos-tip-show "pos-tip")
 
@@ -90,10 +91,11 @@
 ;; do BODY in buffer with man output
 (defmacro sh-with-man-help (cmd &optional sync buffer &rest body)
   (declare (indent defun))
-  `(let ((buffer (or ,buffer "*sh-help*")))
+  `(let ((buffer (get-buffer-create (or ,buffer "*sh-help*"))))
      ,(if sync
           `(with-current-buffer buffer
-             (sh-help-man ,cmd 'sync (current-buffer)))
+             (sh-help-man ,cmd 'sync (current-buffer))
+             ,@body)
         `(set-process-sentinel
           (sh-help-man ,cmd nil buffer)
           #'(lambda (p _m)
@@ -195,6 +197,12 @@
        sh-help-conditional-cache))
     (erase-buffer)))
 
+;;; Man sections
+(defsubst sh-help-man-sections (cmd)
+  (sh-with-man-help cmd 'sync "*sh-help*"
+    (Man-build-section-alist)
+    Man--sections))
+
 ;; -------------------------------------------------------------------
 ;;; Help at point
 
@@ -213,7 +221,9 @@
       (or (sh-help--function-string
            cmd
            (if prompt
-               (read-from-minibuffer "Man Section: " "DESCRIPTION")
+               ;; FIXME: calls CMD twice
+               (ido-completing-read
+                "Man Section: " (sh-help-man-sections "wget") nil t)
              section)
            recache)
           (format "No help found for %s" cmd))
@@ -252,7 +262,7 @@
        (t
         ;; with C-u C-u prompt for 'man' section and recache
         (sh-help-command-at-point
-         cmd (equal arg '(16)) nil 'recache))))))
+         cmd (equal arg '(16)) nil (equal arg '(16))))))))
 
 (provide 'sh-help)
 ;;; sh-help.el ends here
