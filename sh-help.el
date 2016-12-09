@@ -197,19 +197,51 @@
        sh-help-conditional-cache))
     (erase-buffer)))
 
-;;; Man sections
-(defsubst sh-help-man-sections (cmd)
+;; -------------------------------------------------------------------
+;;; Additional Help
+;;
+;; When popup is being displayed, hitting "h" displays buffer with
+;; more help for current command.
+;; - For bash builtins, this is 'man "bash-builtins"' and the window is
+;;   scrolled to the description of the command at point.
+;; - For other commands, just call Man on command.
+
+;;; Man sections for completing read. Not optimal, currently calls
+;; man twice - once to get completions, and again to get popup.
+(defsubst sh-help--man-sections (cmd)
   (sh-with-man-help cmd 'sync "*sh-help*"
     (Man-build-section-alist)
     Man--sections))
 
+;; when Man finishes, set point in MAN-BUFFER to be
+;; after description of CMD
+;; (for `sh-help-more-help' on bash-builtins)
+(defsubst sh-help--Man-after-notify (man-buffer cmd)
+  (with-current-buffer man-buffer
+    (goto-char (point-min))
+    (catch 'done
+      (while (re-search-forward
+              (concat "^[ \t]*" cmd "\\_>") nil 'move)
+        (forward-char -1)
+        (and (eq 'Man-overstrike (get-text-property (point) 'face))
+             (throw 'done nil))))
+    (set-window-point (get-buffer-window man-buffer) (point)))
+  (display-buffer man-buffer 'not-this-window))
+
+;; Too much trouble trying to figure out how to make Man
+;; run synchronously or redefine Man notify command
+(defsubst sh-help-Man-notify (man-buffer cmd)
+  (run-with-timer 0.2 nil 'sh-help--Man-after-notify man-buffer cmd))
+
 ;; -------------------------------------------------------------------
 ;;; Help at point
 
-(defsubst sh-help-more-help (cmd)
+(defun sh-help-more-help (cmd)
   (interactive)
   (sh-with-bash/man cmd
-    (man "bash-builtins")
+    (let ((Man-notify-method 'meek))
+      (man "bash-builtins")
+      (sh-help--Man-after-notify "*Man bash-builtins*" cmd))
     (man cmd)))
 
 ;; show help in popup tooltip for CMD
@@ -223,7 +255,7 @@
            (if prompt
                ;; FIXME: calls CMD twice
                (ido-completing-read
-                "Man Section: " (sh-help-man-sections "wget") nil t)
+                "Man Section: " (sh-help--man-sections cmd) nil t)
              section)
            recache)
           (format "No help found for %s" cmd))
