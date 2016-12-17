@@ -5,6 +5,8 @@
   (require 'pcomplete))
 (require 'eshell)
 (require 'shell-tools)
+(autoload 'pcomplete--here "pcomplete")
+(autoload 'pcomplete-entries "pcomplete")
 
 ;; Open or move eshell in `default-directory'.
 ;;;###autoload

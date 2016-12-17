@@ -37,7 +37,8 @@
 ;;; Code:
 (eval-when-compile
   (require 'nvp-macro)
-  (require 'cl-lib))
+  (require 'cl-lib)
+  (defvar Man--sections))
 (require 'nvp-read) ;; parse 'man' stuff
 (autoload 'sh-tools-function-name "sh-tools")
 (autoload 'sh-tools-conditional-switch "sh-tools")
@@ -235,7 +236,7 @@
 
 ;; -------------------------------------------------------------------
 ;;; Help at point
-
+(defvar Man-notify-method)
 (defun sh-help-more-help (cmd)
   (interactive)
   (sh-with-bash/man cmd
