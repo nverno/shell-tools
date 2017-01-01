@@ -97,3 +97,8 @@
   '()
   "Fish-Mode Abbrevs."
   :parents (list shells-abbrev-table))
+
+(define-abbrev-table 'bats-mode-abbrev-table
+  '()
+  "Bats-Mode Abbrevs."
+  :parents (list prog-mode-abbrev-table))
