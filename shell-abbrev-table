@@ -87,6 +87,7 @@
 
 (define-abbrev-table 'sh-mode-abbrev-table
   '(
+    ("ro" "readonly" nil :system t)
     ("here" "DIR=\"$( cd \"$( dirname \"${BASH_SOURCE[0]}\" )\" && pwd)\""
      nil :system t)
     )

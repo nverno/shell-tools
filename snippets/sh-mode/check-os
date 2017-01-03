@@ -1,0 +1,9 @@
+# -*- mode: snippet -*-
+# name: check OS
+# key: checkos
+# --
+readonly __OS=$(_get_os)
+local _supported=false
+for a in "\${__SUPPORTED_OS[@]}"; do [[ "$a" == "$__OS" ]] && _supported=true; done
+[ "$_supported" != "true" ] &&
+    _error_exit "script doesn't support $(_get_os). supported: $__SUPPORTED_OS"

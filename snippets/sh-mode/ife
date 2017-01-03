@@ -1,6 +1,6 @@
 # -*- mode: snippet -*-
 # name: ifelse
-# key: ifelse
+# key: ife
 # expand-env: ((yas-indent-line 'fixed))
 # --
 if $1; then

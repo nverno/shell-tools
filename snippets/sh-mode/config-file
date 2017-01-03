@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: config file
+# key: configf
+# --
+readonly __CFGFILE="$( basename "${BASH_SOURCE[0]}" )".ini
