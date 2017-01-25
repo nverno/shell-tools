@@ -1,6 +1,6 @@
 # -*- mode: snippet -*-
-# name: fn-doc
-# key: fndoc
+# name: function-doc
+# key: fundoc
 # --
 ##
 # @info		$2
