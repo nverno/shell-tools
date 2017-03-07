@@ -1,9 +1,10 @@
 ;;; shell-tools --- 
 
+;; This is free and unencumbered software released into the public domain.
+
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
 ;; Package-Requires: 
-;; Copyright (C) 2016, Noah Peart, all rights reserved.
 ;; Created:  4 November 2016
 
 ;; This file is not part of GNU Emacs.
@@ -37,38 +38,10 @@
 (autoload 'pcomplete-entries "pcomplete")
 (autoload 'expand-add-abbrevs "expand")
 
-(defvar shell-tools--dir nil)
-(when load-file-name
-  (setq shell-tools--dir (file-name-directory load-file-name)))
+(nvp-package-dir shell-tools--dir)
+(nvp-package-load-snippets shell-tools--dir)
 
-;;--- Pcomplete ------------------------------------------------------
-
-(defun pcomplete/shell-mode/git ()
-  (pcomplete-here
-   '("add" "bisect" "branch" "checkout" "clone" "commit" "diff" "fetch"
-     "grep" "init" "log" "merge" "mv" "pull" "push" "rebase" "remote"
-     "reset" "rm" "show" "status" "submodule" "tag"))
-       
-  ;; FIXME: branches? cant use readline on windows, not sure its
-  ;; worth fixing
-  (pcomplete-here
-   (let ((last-cmd (nth (1- pcomplete-last) pcomplete-args)))
-     (cond
-      ((equal "checkout" last-cmd) " ")
-      ;; (my--get-git-branches)
-      ((equal "add" last-cmd)
-       (pcomplete-entries))
-      ((equal "merge" last-cmd) " ")
-      ;; (my--get-git-branches t)
-      ))))
-
-;; setup clink so it starts whenever cmd.exe runs
-(nvp-with-w32
-  (defun shell-w32tools-clink-install ()
-    (start-process "clink" "*nvp-install*" "cmd.exe"
-                   "clink" "autorun" "install")))
-
-;;--- Shells ---------------------------------------------------------
+;;——— Shells —————————————————————————————————————————————————————————
 
 ;; return some available shells
 (defun shell-tools-get-shells ()
@@ -104,7 +77,7 @@
 (nvp-newline shell-tools-newline-dwim nil
   :pairs (("{" "}") ("(" ")")))
 
-;;--- Abbrevs --------------------------------------------------------
+;;——— Abbrevs ————————————————————————————————————————————————————————
 
 ;; dont expand in strings or after [-:]
 (defun shell-tools-abbrev-expand-p ()
@@ -202,19 +175,32 @@
                    (insert " :system t)\n")))))
       (write-abbrev-file file ))))
 
-;;--- Setup ----------------------------------------------------------
+;;——— Pcomplete ——————————————————————————————————————————————————————
 
-(eval-after-load 'yasnippet
-  '(let ((dir (expand-file-name "snippets" shell-tools--dir))
-         (dirs (or (and (consp yas-snippet-dirs) yas-snippet-dirs)
-                   (cons yas-snippet-dirs ()))))
-     (unless (member dir dirs)
-       (setq yas-snippet-dirs (delq nil (cons dir dirs))))
-     (yas-load-directory dir)))
+(defun pcomplete/shell-mode/git ()
+  (pcomplete-here
+   '("add" "bisect" "branch" "checkout" "clone" "commit" "diff" "fetch"
+     "grep" "init" "log" "merge" "mv" "pull" "push" "rebase" "remote"
+     "reset" "rm" "show" "status" "submodule" "tag"))
+       
+  ;; FIXME: branches? cant use readline on windows, not sure its
+  ;; worth fixing
+  (pcomplete-here
+   (let ((last-cmd (nth (1- pcomplete-last) pcomplete-args)))
+     (cond
+      ((equal "checkout" last-cmd) " ")
+      ;; (my--get-git-branches)
+      ((equal "add" last-cmd)
+       (pcomplete-entries))
+      ((equal "merge" last-cmd) " ")
+      ;; (my--get-git-branches t)
+      ))))
 
-;; -------------------------------------------------------------------
-
-(declare-function yas-load-directory "yasnippet")
+;; setup clink so it starts whenever cmd.exe runs
+(nvp-with-w32
+  (defun shell-w32tools-clink-install ()
+    (start-process "clink" "*nvp-install*" "cmd.exe"
+                   "clink" "autorun" "install")))
 
 (provide 'shell-tools)
 ;;; shell-tools.el ends here
