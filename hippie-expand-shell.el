@@ -89,8 +89,55 @@
              (ignore (and old (he-reset-string)))
            (he-substitute-string expansion t)))))
 
+;; -------------------------------------------------------------------
+ ;;; Expansion using function to retrieve history elements
+
+(defun he-shell-get-history-default-fn (&optional input-ring)
+  (ring-elements (or input-ring
+                     (symbol-value he-shell-history-ring))))
+
+;; remove trailing ')' if first char of STR is '(', for expanding in lispy shells
+(defun he-shell-remove-trailing-paren (str)
+  (and str
+       (if (and (string= "(" (substring str 0 1))
+                (string= ")" (substring str -1)))
+           (substring str 0 -1)
+         str)))
+
+;; call this function to return history elements to match against
+(defvar-local he-shell-get-history-fn 'he-shell-get-history-default-fn)
+
+;; after expanding candidate, call this function on the expansion.
+;; e.g for expanding in a lisp shell, remove a trailing ')'
+(defvar-local he-shell-post-expand-fn 'identity)
+
+;; Expand from shell history using function to retrieve history and calling
+;; function on expanded candidate
 ;;;###autoload
-(defun hippie-expand-shell-setup (&optional history bol-fn)
+(defun try-expand-shell-history-2 (old)
+  (and he-shell-history-ring
+       (let (expansion)
+         (unless old
+           (he-init-string (funcall he-shell-bol) (point))
+           (setq he-shell--index 0)
+           (setq he-shell--matches
+                 (and (not (equal "" he-search-string))
+                      (cl-remove-duplicates
+                       (all-completions
+                        he-search-string
+                        (funcall he-shell-get-history-fn))
+                       :test 'string=
+                       :from-end t))))
+         (when he-shell--matches
+           (setq expansion (funcall he-shell-post-expand-fn
+                                    (nth he-shell--index he-shell--matches)))
+           (setq he-shell--index (1+ he-shell--index)))
+         (if (not expansion)
+             (ignore (and old (he-reset-string)))
+           (he-substitute-string expansion t)))))
+
+;;;###autoload
+(defun hippie-expand-shell-setup (&optional history bol-fn history-fn expand-fn)
   (interactive)
   (let ((history (or history
                      (cdr (assoc major-mode he-shell-history-alist))))
@@ -98,9 +145,14 @@
     (when (and bol history)
       (setq-local he-shell-history-ring history)
       (setq-local he-shell-bol bol)
+      (and expand-fn (setq-local he-shell-post-expand-fn expand-fn))
       (make-local-variable 'hippie-expand-try-functions-list)
-      (add-to-list 'hippie-expand-try-functions-list
-                   'try-expand-shell-history))))
+      (if (not history-fn)
+          (add-to-list 'hippie-expand-try-functions-list
+                       'try-expand-shell-history)
+        (setq-local he-shell-get-history-fn history-fn)
+        (add-to-list 'hippie-expand-try-functions-list
+                     'try-expand-shell-history-2)))))
 
 (provide 'hippie-expand-shell)
 ;;; hippie-expand-shell.el ends here
