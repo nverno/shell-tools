@@ -75,6 +75,22 @@
          (looking-at "[ !]*\\(-[[:alpha:]]+\\)")
          (match-string 1))))
 
+;; position at beginning of first line of here-doc if point is
+;; currently in a here-doc
+(defun sh-tools-here-doc-p (point)
+  (save-excursion
+    (goto-char point)
+    (back-to-indentation)
+    (when (looking-back "[^<]<<.*" (line-beginning-position)) ;skip opening line
+      (forward-line))
+    (let ((marker (get-text-property (point) 'sh-here-doc-marker)))
+      (when marker                      ;search back until no marker
+        (while (and (not (bobp))
+                    (get-text-property (point) 'sh-here-doc-marker))
+          (forward-line -1)
+          (back-to-indentation))
+        (point)))))
+
 ;; ------------------------------------------------------------
 ;;; Completion
 
@@ -152,7 +168,7 @@
       (font-lock-ensure (point-min) (point-max)))))
 
 ;; -------------------------------------------------------------------
-;;; Interactive
+;;; Commands
 
 ;; sh-script imenu
 (defvar sh-tools-function-re
@@ -191,6 +207,31 @@
         (sh-tools-beginning-of-defun -1)
         (beginning-of-line))
     (error (forward-line -1))))
+
+;;; Toggle
+
+;; toggle here-doc indentation:
+;; open with '<<-' and use only leading tabs for indentation
+(defun sh-tools-toggle-here-doc-indent (point)
+  (interactive "d")
+  (let ((start-pos (sh-tools-here-doc-p point)))
+    (when start-pos
+      (save-excursion
+        (goto-char start-pos)
+        (search-forward-regexp "[^<]<<" (line-end-position) 'move)
+        (let ((indent (not (eq ?- (char-after))))
+              marker)
+          (if indent                    ;toggle preceding '-'
+              (insert "-")
+            (delete-char 1))
+          (forward-to-indentation)      ;skip past opening line
+          (setq marker (get-text-property (point) 'sh-here-doc-marker))
+          (while (and (get-text-property (point) 'sh-here-doc-marker)
+                      (not (looking-at-p marker)))
+            (delete-horizontal-space)
+            (and indent                  ;toggle indentation
+                 (insert "\t"))
+            (forward-to-indentation)))))))
 
 ;; ------------------------------------------------------------
 ;;; Cleanup

@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: here
+# key: here
+# --
+<<${1:EOF}
+$0
+$1
