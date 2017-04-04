@@ -71,7 +71,7 @@
   (shell-command-to-string
    (concat "bash -c 'help " (and synopsis "-s ") cmd "'")))
 
-(defsubst sh-help-bash-builtin (cmd &optional sync buffer)
+(defun sh-help-bash-builtin (cmd &optional sync buffer)
   (let ((cmd (concat "bash -c 'help " cmd "'"))
         (buffer (or buffer "*sh-help*")))
     (if sync
@@ -80,7 +80,7 @@
 
 ;; output to BUFFER, return process
 ;; man --names-only %s | col -b
-(defsubst sh-help-man (cmd &optional sync buffer)
+(defun sh-help-man (cmd &optional sync buffer)
   (let ((cmd (concat "man --names-only "
                      (regexp-quote cmd) " | col -b")))
     (if sync
@@ -217,7 +217,7 @@
 ;; when Man finishes, set point in MAN-BUFFER to be
 ;; after description of CMD
 ;; (for `sh-help-more-help' on bash-builtins)
-(defsubst sh-help--Man-after-notify (man-buffer cmd)
+(defun sh-help--Man-after-notify (man-buffer cmd)
   (with-current-buffer man-buffer
     (goto-char (point-min))
     (catch 'done

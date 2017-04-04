@@ -94,6 +94,10 @@
 ;; ------------------------------------------------------------
 ;;; Completion
 
+(declare-function company-doc-buffer "company")
+(declare-function company-quickhelp--doc "company-quickhelp")
+(autoload 'string-trim "subr-x")
+
 (defvar sh-tools-company-backends '(company-bash :with company-shell))
 
 (nvp-with-gnu
@@ -115,6 +119,47 @@
     (setq sh-tools-company-backends
           '(company-bash :with company-capf))))
 
+;;; company-quickhelp
+;; Since no doc-buffer is returned by company-capf, rewrite
+;; company-quickhelp doc retrieval method to just call man on the
+;; current candidates
+(defun sh-tools-doc-buffer (cmd)
+  (company-doc-buffer
+   (let ((man-page (shell-command-to-string (format "man %s" cmd))))
+     (if (or (null man-page)
+             (string= man-page "")
+             (string-prefix-p "No manual entry" man-page))
+         (shell-command-to-string
+          (format "echo \"timeout 1 %s --help\" | %s --restricted"
+                  cmd
+                  (string-trim (shell-command-to-string "which bash"))))
+       man-page))))
+
+(defun sh-tools-quickhelp-doc (selected)
+  (cl-letf (((symbol-function 'completing-read)
+             #'company-quickhelp--completing-read))
+    (let* ((doc (sh-tools-doc-buffer selected))
+           (doc-and-meta (when doc
+                           (company-quickhelp--doc-and-meta doc)))
+           (truncated (plist-get doc-and-meta :truncated))
+           (doc (plist-get doc-and-meta :doc)))
+      (unless (string= doc "")
+        (if truncated
+            (concat doc "\n\n[...]")
+          doc)))))
+
+;; re-bind to this in `company-active-map'
+(defun sh-tools-quickhelp-toggle ()
+  (interactive)
+  (let ((x-gtk-use-system-tooltips nil))
+    (or (x-hide-tip)
+        (cl-letf (((symbol-function 'company-quickhelp--doc)
+                   #'sh-tools-quickhelp-doc))
+          ;; flickers the screen - cant use the timer, since it seems
+          ;; that lexical binding doesn't work in that case
+          (company-quickhelp--show)))))
+
+
 ;; setup company backends with company-bash and either company-shell
 ;; or bash-completion
 (defun sh-tools-company-setup ()
@@ -123,7 +168,10 @@
     (when (require 'bash-completion nil t)
       (delq 'company-capf company-backends)
       (add-hook 'completion-at-point-functions
-                'sh-tools-bash-completion nil 'local)))
+                'sh-tools-bash-completion nil 'local))
+    ;; rebind company-quickhelp
+    (nvp-with-local-keymap company-active-map
+      ("M-h" . sh-tools-quickhelp-toggle)))
   (cl-pushnew sh-tools-company-backends company-backends)
   (setq-local company-transformers
               '(company-sort-by-backend-importance)))
