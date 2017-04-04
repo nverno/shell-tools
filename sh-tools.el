@@ -160,6 +160,15 @@
           (company-quickhelp--show)))))
 
 
+;; show help buffer in other window from company-active-map
+(defun sh-tools-company-show-doc-buffer ()
+  (interactive)
+  (cl-letf (((symbol-function 'company-call-backend)
+             #'(lambda (_type selected)
+                 (sh-tools-doc-buffer selected)
+                 "*company-documentation*")))
+    (company-show-doc-buffer)))
+
 ;; setup company backends with company-bash and either company-shell
 ;; or bash-completion
 (defun sh-tools-company-setup ()
@@ -169,9 +178,11 @@
       (delq 'company-capf company-backends)
       (add-hook 'completion-at-point-functions
                 'sh-tools-bash-completion nil 'local))
-    ;; rebind company-quickhelp
+    ;; use local version of `company-active-map' to rebind
+    ;; functions to show popup help and jump to help buffer
     (nvp-with-local-keymap company-active-map
-      ("M-h" . sh-tools-quickhelp-toggle)))
+      ("M-h" . sh-tools-quickhelp-toggle)
+      ("C-h" . sh-tools-company-show-doc-buffer)))
   (cl-pushnew sh-tools-company-backends company-backends)
   (setq-local company-transformers
               '(company-sort-by-backend-importance)))
