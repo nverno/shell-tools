@@ -75,6 +75,16 @@
          (looking-at "[ !]*\\(-[[:alpha:]]+\\)")
          (match-string 1))))
 
+;; true if point is in heredoc
+(defsubst sh-tools--here-doc-p (point)
+  (eq (get-text-property point 'face) 'sh-heredoc))
+
+;; get the here doc marker for block
+(defsubst sh-tools--here-doc-marker (&optional point)
+  (let ((ppss (syntax-ppss point)))
+    (when (eq t (nth 3 ppss))
+      (get-text-property (nth 8 ppss) 'sh-here-doc-marker))))
+
 ;; position at beginning of first line of here-doc if point is
 ;; currently in a here-doc
 (defun sh-tools-here-doc-p (point)
@@ -83,10 +93,10 @@
     (back-to-indentation)
     (when (looking-back "[^<]<<.*" (line-beginning-position)) ;skip opening line
       (forward-line))
-    (let ((marker (get-text-property (point) 'sh-here-doc-marker)))
-      (when marker                      ;search back until no marker
+    (let ((in-heredoc (sh-tools--here-doc-p (point))))
+      (when in-heredoc                      ;search back until no marker
         (while (and (not (bobp))
-                    (get-text-property (point) 'sh-here-doc-marker))
+                    (sh-tools--here-doc-p (point)))
           (forward-line -1)
           (back-to-indentation))
         (point)))))
@@ -284,8 +294,8 @@
               (insert "-")
             (delete-char 1))
           (forward-to-indentation)      ;skip past opening line
-          (setq marker (get-text-property (point) 'sh-here-doc-marker))
-          (while (and (get-text-property (point) 'sh-here-doc-marker)
+          (setq marker (sh-tools--here-doc-marker))
+          (while (and (sh-tools--here-doc-p (point))
                       (not (looking-at-p marker)))
             (delete-horizontal-space)
             (and indent                  ;toggle indentation
