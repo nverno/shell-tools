@@ -34,6 +34,23 @@
 (require 'shell-tools)
 
 ;; -------------------------------------------------------------------
+;;; Variables
+
+;; sh-script imenu
+(defvar sh-tools-function-re
+  (nvp-concat
+   "\\(?:"
+   ;; function FOO()
+   "^\\s-*function\\s-+\\([[:alpha:]_][[:alnum:]_]*\\)\\s-*\\(?:()\\)?"
+   "\\|"
+   ;; FOO()
+   "^\\s-*\\([[:alpha:]_][[:alnum:]_]*\\)\\s-*()"
+   "\\)"))
+
+;; imenu header comment regexp
+(defvar sh-tools-comment-headers-re '((nil "^###\\s-*\\(.+\\)\\s-*$" 1)))
+
+;; -------------------------------------------------------------------
 ;;; Utils
 
 ;; name of current function
@@ -238,18 +255,6 @@
 
 ;; -------------------------------------------------------------------
 ;;; Commands
-
-;; sh-script imenu
-(defvar sh-tools-function-re
-  (eval-when-compile
-    (concat
-     "\\(?:"
-     ;; function FOO()
-     "^\\s-*function\\s-+\\([[:alpha:]_][[:alnum:]_]*\\)\\s-*\\(?:()\\)?"
-     "\\|"
-     ;; FOO()
-     "^\\s-*\\([[:alpha:]_][[:alnum:]_]*\\)\\s-*()"
-     "\\)")))
 
 (defun sh-tools-beginning-of-defun (&optional arg)
   (interactive "^p")
