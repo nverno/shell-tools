@@ -123,6 +123,8 @@
 
 (declare-function company-doc-buffer "company")
 (declare-function company-quickhelp--doc "company-quickhelp")
+(declare-function company-quickhelp--doc-and-meta "company-quickhelp")
+
 (autoload 'string-trim "subr-x")
 
 (defvar sh-tools-company-backends '(company-bash :with company-shell))
