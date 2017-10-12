@@ -41,7 +41,8 @@
 (nvp-package-dir shell-tools--dir)
 (nvp-package-load-snippets shell-tools--dir)
 
-;;——— Shells —————————————————————————————————————————————————————————
+;; -------------------------------------------------------------------
+;;; Utils
 
 ;; return some available shells
 (defun shell-tools-get-shells ()
@@ -55,6 +56,31 @@
         nconc (mapcar (lambda (x) (expand-file-name x var))
                       '("sh.exe" "bash.exe" "fish.exe" "zsh.exe"))))))
 
+;; hash table to hold bash aliases and their expansions
+(defvar shell-tools-alias-table nil)
+(defun shell-tools--get-aliases ()
+  (setq shell-tools-alias-table (make-hash-table :size 129 :test 'equal))
+  (dolist (line (process-lines "bash" "-ci" "alias"))
+    (when (string-prefix-p "alias" line)
+      (and (string-match "alias\\s-*\\([^=]+\\)=\\(.*\\)" line)
+           (puthash (match-string-no-properties 1 line)
+                    ;; assume all aliases are of the form
+                    ;; alias ..='cd ..'
+                    ;; eg. the start and end with "'"
+                    ;; that way don't have to worry about escaped single quotes
+                    ;; when parsing aliases
+                    (substring (match-string-no-properties 2 line) 1 -1)
+                    shell-tools-alias-table)))))
+
+;; get bash alias expansion, return nil if none
+(defun shell-tools-get-alias (alias)
+  (unless shell-tools-alias-table          ;initialize/fill the alias hash
+    (shell-tools--get-aliases))
+  (gethash alias shell-tools-alias-table nil))
+
+;; -------------------------------------------------------------------
+;;; Commands
+
 ;; switch to a different shell for compiling
 (defvar-local shell-tools-shell "bash")
 (defun shell-tools-switch-shell (shell)
@@ -64,8 +90,7 @@
            (completing-read "Shell: " (shell-tools-get-shells)))))
   (setq shell-tools-shell shell))
 
-;;; Interactive
-
+;; Run script
 (defun shell-tools-basic-compile ()
   (interactive)
   (let ((compile-command
@@ -77,7 +102,19 @@
 (nvp-newline shell-tools-newline-dwim nil
   :pairs (("{" "}") ("(" ")")))
 
-;;——— Abbrevs ————————————————————————————————————————————————————————
+;; expand shell alias
+(defun shell-tools-expand-alias (alias)
+  (interactive
+   (list (buffer-substring-no-properties (comint-line-beginning-position)
+                                         (point))))
+  (let ((exp (shell-tools-get-alias alias)))
+    (when exp
+      (comint-bol)
+      (insert exp)
+      (delete-region (point) (point-at-eol)))))
+
+;; -------------------------------------------------------------------
+;;; Abbrevs 
 
 ;; dont expand in strings or after [-:]
 (defun shell-tools-abbrev-expand-p ()
@@ -175,7 +212,8 @@
                    (insert " :system t)\n")))))
       (write-abbrev-file file ))))
 
-;;——— Pcomplete ——————————————————————————————————————————————————————
+;; -------------------------------------------------------------------
+;;; Pcomplete 
 
 (defun pcomplete/shell-mode/git ()
   (pcomplete-here

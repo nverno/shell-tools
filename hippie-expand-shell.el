@@ -90,7 +90,7 @@
            (he-substitute-string expansion t)))))
 
 ;; -------------------------------------------------------------------
- ;;; Expansion using function to retrieve history elements
+;;; Expansion using function to retrieve history elements
 
 (defun he-shell-get-history-default-fn (&optional input-ring)
   (ring-elements (or input-ring
@@ -135,6 +135,31 @@
          (if (not expansion)
              (ignore (and old (he-reset-string)))
            (he-substitute-string expansion t)))))
+
+;; -------------------------------------------------------------------
+;;; Expand shell aliases, eg. bash shell-expand-alias C-M-e 
+
+(autoload 'shell-tools-get-alias "shell-tools")
+
+;;;###autoload
+(defun try-expand-shell-alias (old)
+  "Expand shell alias, like bash shell-expand-alias."
+  (if (not old)
+      (progn
+        (he-init-string (comint-line-beginning-position) (point))
+        (if (not (he-string-member he-search-string he-tried-table))
+            (setq he-tried-table (cons he-search-string he-tried-table)))
+        (let ((alias (shell-tools-get-alias he-search-string)))
+          (when alias                   ;substitute once and return nil
+            (he-substitute-string alias)
+            (setq he-expand-list nil)
+            t)))
+    (progn
+      (he-reset-string)
+      nil)))
+
+;; -------------------------------------------------------------------
+;;; Setup 
 
 ;;;###autoload
 (defun hippie-expand-shell-setup (&optional history bol-fn history-fn expand-fn)
