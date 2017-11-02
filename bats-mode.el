@@ -158,7 +158,8 @@
 Commands: 
 \\{bats-mode-map}"
   (setq-local sh-shell "bash")
-  (setq-local sh-indentation bats-indent-offset)
+  (if (< 27 emacs-major-version)
+      (setq-local sh-indentation bats-indent-offset))
   (setq-local sh-basic-offset bats-indent-offset)
   (font-lock-add-keywords 'bats-mode bats-font-lock-keywords))
 
