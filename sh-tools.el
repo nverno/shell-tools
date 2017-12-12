@@ -309,6 +309,17 @@
                  (insert "\t"))
             (forward-to-indentation)))))))
 
+;; -------------------------------------------------------------------
+;;; REPL
+
+(declare-function sh-send-text "sh-script")
+
+;; send selected region and step
+(defun sh-tools-send-region (beg end)
+  (interactive "r")
+  (sh-send-text (buffer-substring-no-properties beg end))
+  (goto-char end))
+
 ;; ------------------------------------------------------------
 ;;; Cleanup
 
