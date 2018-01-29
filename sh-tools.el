@@ -313,11 +313,42 @@
 ;;; REPL
 
 (declare-function sh-send-text "sh-script")
+(eval-when-compile
+  (defvar sh-shell)
+  (defvar sh-shell-process)
+  (defvar explicit-shell-file-name))
+
+(defvar-local sh-tools--last-buffer nil)
+
+;; replacement for `sh-shell-process'
+(defun sh-tools-shell-process ()
+  (if (process-live-p sh-shell-process)
+      sh-shell-process
+    (setq sh-shell-process
+          (let ((proc
+                 (cl-loop for proc in (process-list)
+                    when (and (process-live-p proc)
+                              (process-command proc)
+                              (cl-find "-i" (process-command proc) :test 'string=))
+                    return proc)))
+            (or proc
+                (get-buffer-process
+                 (let ((explicit-shell-file-name sh-shell-file))
+                   (shell))))))))
+
+(defun sh-tools-switch-to-inf ()
+  (interactive)
+  (if (and (eq major-mode 'shell-mode)
+           sh-tools--last-buffer)
+      (pop-to-buffer sh-tools--last-buffer)
+    (setq sh-tools--last-buffer (current-buffer))
+    (pop-to-buffer (process-buffer (sh-tools-shell-process)))))
 
 ;; send selected region and step
 (defun sh-tools-send-region (beg end)
   (interactive "r")
-  (sh-send-text (buffer-substring-no-properties beg end))
+  (comint-send-string (sh-tools-shell-process)
+                      (concat (buffer-substring beg end) "\n"))
   (goto-char end))
 
 ;; ------------------------------------------------------------
