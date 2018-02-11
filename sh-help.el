@@ -218,15 +218,16 @@
 ;; after description of CMD
 ;; (for `sh-help-more-help' on bash-builtins)
 (defun sh-help--Man-after-notify (man-buffer cmd)
-  (with-current-buffer man-buffer
-    (goto-char (point-min))
-    (catch 'done
-      (while (re-search-forward
-              (concat "^[ \t]*" cmd "\\_>") nil 'move)
-        (forward-char -1)
-        (and (eq 'Man-overstrike (get-text-property (point) 'face))
-             (throw 'done nil))))
-    (set-window-point (get-buffer-window man-buffer) (point)))
+  (save-mark-and-excursion
+    (with-current-buffer man-buffer
+      (goto-char (point-min))
+      (catch 'done
+        (while (re-search-forward
+                (concat "^[ \t]*" cmd "\\_>") nil 'move)
+          (forward-char -1)
+          (and (eq 'Man-overstrike (get-text-property (point) 'face))
+               (throw 'done nil))))
+      (set-window-point (get-buffer-window man-buffer) (point))))
   (display-buffer man-buffer 'not-this-window))
 
 ;; Too much trouble trying to figure out how to make Man
@@ -260,10 +261,12 @@
              section)
            recache)
           (format "No help found for %s" cmd))
-      :help-fn #'(lambda ()
-                   (interactive)
-                   (x-hide-tip)
-                   (sh-help-more-help cmd)))))
+      :help-fn (lambda ()
+                 (interactive)
+                 ;; why isn't this being captured lexically?
+                 ;; it is let bound in the `nvp-with-toggled-tip'
+                 (let ((x-gtk-use-system-tooltips nil)) (x-hide-tip))
+                 (sh-help-more-help cmd)))))
 
 ;; display help for conditional expressions: '[[' '['
 (defun sh-help-conditional (switch &optional ignore)
@@ -273,7 +276,7 @@
      (list (completing-read "Switch: " sh-help-conditional-cache))))
   (when (not ignore)
     (nvp-with-toggled-tip
-      (sh-help--conditional-string switch))))
+      (sh-help--conditional-string switch) :help-fn :none)))
 
 ;; popup help for thing at point
 ;; - with C-u, show help for thing directly at point
