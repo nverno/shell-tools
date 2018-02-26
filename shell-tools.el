@@ -240,5 +240,23 @@
     (start-process "clink" "*nvp-install*" "cmd.exe"
                    "clink" "autorun" "install")))
 
+;; -------------------------------------------------------------------
+;;; External
+
+;; run input on current line in external shell (gnome)
+(defun nvp-shell-run-external ()
+  (interactive)
+  (let ((proc (get-buffer-process (current-buffer)))
+        ;; FIXME: inherit environment??
+        )
+    (if (not proc) (user-error "Current buffer has no process")
+      (widen)
+      (let ((cmd (funcall comint-get-old-input)))
+        (and (not (string= "" (string-trim cmd)))
+             (comint-send-string
+              proc
+              (format "gnome-terminal --tab -e \"bash -lc '%s;bash'\"\n" cmd)))
+        (comint-delete-input)))))
+
 (provide 'shell-tools)
 ;;; shell-tools.el ends here
