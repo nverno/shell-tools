@@ -255,8 +255,13 @@
         (and (not (string= "" (string-trim cmd)))
              (comint-send-string
               proc
-              (format "gnome-terminal --tab -e \"bash -lc '%s;bash'\"\n" cmd)))
+              (format "gnome-terminal --tab -e \"bash -c '%s;bash'\"\n" cmd)))
         (comint-delete-input)))))
+
+(defun nvp-shell-nautilus ()
+  (interactive)
+  (let ((proc (get-buffer-process (current-buffer))))
+    (and proc (comint-send-string proc "nautilus . 2>/dev/null\n"))))
 
 (provide 'shell-tools)
 ;;; shell-tools.el ends here
