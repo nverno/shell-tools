@@ -256,6 +256,7 @@
              (comint-send-string
               proc
               (format "gnome-terminal --tab -e \"bash -c '%s;bash'\"\n" cmd)))
+        (comint-add-to-input-history cmd)
         (comint-delete-input)))))
 
 (defun nvp-shell-nautilus ()
