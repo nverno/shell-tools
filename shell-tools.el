@@ -33,7 +33,7 @@
   (require 'cl-lib)
   (require 'nvp-macro)
   (require 'pcomplete)
-  (defvar yas-snippet-dirs))
+  (defvar shells-abbrev-table))
 (autoload 'pcomplete--here "pcomplete")
 (autoload 'pcomplete-entries "pcomplete")
 (autoload 'expand-add-abbrevs "expand")

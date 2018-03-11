@@ -32,6 +32,8 @@
   (defvar company-backends)
   (defvar company-transformers))
 (require 'shell-tools)
+(declare-function company-quickhelp--completing-read "company-quickhelp")
+(declare-function company-quickhelp--show "company-quickhelp")
 
 ;; -------------------------------------------------------------------
 ;;; Variables
