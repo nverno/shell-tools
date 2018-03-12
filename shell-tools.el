@@ -1,4 +1,4 @@
-;;; shell-tools --- 
+;;; shell-tools ---  -*- lexical-binding: t; -*-
 
 ;; This is free and unencumbered software released into the public domain.
 
@@ -176,7 +176,7 @@
                    (y-or-n-p "Use only windows abbrevs?")
                    'windows))
           (system (y-or-n-p "Create system abbrevs?")))
-     (list file merge os)))
+     (list file merge os system)))
   ;; construct abbrev table
   (define-abbrev-table 'shell-tools-abbrev-table
     (shell-tools-read-aliases file merge os)
@@ -243,7 +243,8 @@
 ;; -------------------------------------------------------------------
 ;;; External
 
-;; run input on current line in external shell (gnome)
+;; run input on current line in external shell (gnome) and give
+;; it a name
 (defun nvp-shell-run-external ()
   (interactive)
   (let ((proc (get-buffer-process (current-buffer)))
@@ -251,7 +252,10 @@
         )
     (if (not proc) (user-error "Current buffer has no process")
       (widen)
-      (let ((cmd (funcall comint-get-old-input)))
+      (let* ((cmd (funcall comint-get-old-input))
+             (process-environment
+              (cons (format "PROMPT_COMMAND='echo -ne \"\\033]0;%s\\077\"'" cmd)
+                    process-environment)))
         (and (not (string= "" (string-trim cmd)))
              (comint-send-string
               proc
