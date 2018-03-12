@@ -253,6 +253,7 @@
     (if (not proc) (user-error "Current buffer has no process")
       (widen)
       (let* ((cmd (funcall comint-get-old-input))
+             ;; FIXME: doesn't work -- how to pass env from gnome-shell => bash
              (process-environment
               (cons (format "PROMPT_COMMAND='echo -ne \"\\033]0;%s\\077\"'" cmd)
                     process-environment)))
