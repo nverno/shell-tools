@@ -30,10 +30,26 @@
   (require 'nvp-macro)
   (require 'cl-lib)
   (defvar company-backends)
-  (defvar company-transformers))
+  (defvar company-transformers)
+  (defvar sh-shell)
+  (defvar sh-shell-process)
+  (defvar explicit-shell-file-name))
 (require 'shell-tools)
+
 (declare-function company-quickhelp--completing-read "company-quickhelp")
 (declare-function company-quickhelp--show "company-quickhelp")
+(declare-function company-bash "company-bash")
+(declare-function company-shell "company-shell")
+(declare-function company-sort-by-backend-importance "company")
+(declare-function company-complete "company")
+(declare-function bash-completion-dynamic-complete "bash-completion")
+(declare-function sh-beginning-of-command "sh-script")
+(declare-function company-doc-buffer "company")
+(declare-function company-quickhelp--doc "company-quickhelp")
+(declare-function company-quickhelp--doc-and-meta "company-quickhelp")
+(declare-function sh-send-text "sh-script")
+
+(autoload 'string-trim "subr-x")
 
 ;; -------------------------------------------------------------------
 ;;; Variables
@@ -122,12 +138,6 @@
 
 ;; ------------------------------------------------------------
 ;;; Completion
-
-(declare-function company-doc-buffer "company")
-(declare-function company-quickhelp--doc "company-quickhelp")
-(declare-function company-quickhelp--doc-and-meta "company-quickhelp")
-
-(autoload 'string-trim "subr-x")
 
 (defvar sh-tools-company-backends '(company-bash :with company-shell))
 
@@ -314,12 +324,6 @@
 ;; -------------------------------------------------------------------
 ;;; REPL
 
-(declare-function sh-send-text "sh-script")
-(eval-when-compile
-  (defvar sh-shell)
-  (defvar sh-shell-process)
-  (defvar explicit-shell-file-name))
-
 (defvar-local sh-tools--last-buffer nil)
 
 ;; replacement for `sh-shell-process'
@@ -362,15 +366,6 @@
     (set-buffer-file-coding-system 'utf-8-unix))
   ;; align backslashes
   (align-regexp (point-min) (point-max) "\\(\\s-*\\)\\\\\\s-*$"))
-
-;; ------------------------------------------------------------
-
-(declare-function company-bash "company-bash")
-(declare-function company-shell "company-shell")
-(declare-function company-sort-by-backend-importance "company")
-(declare-function company-complete "company")
-(declare-function bash-completion-dynamic-complete "bash-completion")
-(declare-function sh-beginning-of-command "sh-script")
 
 (provide 'sh-tools)
 ;;; sh-tools.el ends here
