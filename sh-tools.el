@@ -71,8 +71,8 @@
 ;; -------------------------------------------------------------------
 ;;; Utils
 
-;; name of current function
-(defun sh-tools-function-name ()
+;; name of current command
+(defun sh-tools-current-command ()
   (let ((ppss (syntax-ppss))
         (start (or (cdr (bounds-of-thing-at-point 'symbol)) (point))))
     ;; ignore comments

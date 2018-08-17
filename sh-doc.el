@@ -36,7 +36,6 @@
 (defsubst sh-doc-active-p ()
   (nth 4 (syntax-ppss)))
 
-;;;###autoload
 (defun sh-doc-insert (type)
   (interactive
    (list (completing-read "doc: " sh-doc-types)))
@@ -44,9 +43,16 @@
   (insert "@" type)
   (indent-to-column sh-doc-offset-column))
 
-;; (defun sh-doc-get-info ()
-;;   (sh-in-comment-or-string)
-;;   )
+;;;###autoload
+(defun sh-doc-newline-dwim ()
+  (interactive)
+  (end-of-line)
+  (if (sh-doc-active-p)
+      (progn
+        (newline)
+        (call-interactively 'sh-doc-insert))
+    (newline)
+    (insert "# ")))
 
 (provide 'sh-doc)
 ;;; sh-doc.el ends here

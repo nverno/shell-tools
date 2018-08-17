@@ -40,7 +40,7 @@
   (require 'cl-lib)
   (defvar Man--sections))
 (require 'nvp-read) ;; parse 'man' stuff
-(autoload 'sh-tools-function-name "sh-tools")
+(autoload 'sh-tools-current-command "sh-tools")
 (autoload 'sh-tools-conditional-switch "sh-tools")
 (autoload 'Man-build-section-alist "man")
 (autoload 'nvp-basic-temp-binding "nvp-basic")
@@ -290,7 +290,7 @@
   (interactive "P")
   (if (equal arg '(4))
       (call-interactively 'sh-help-command-at-point)
-    (let ((cmd (sh-tools-function-name)))
+    (let ((cmd (sh-tools-current-command)))
       (cond
        ((member cmd '("[[" "["))
         ;; return help for current switch or all if not found
