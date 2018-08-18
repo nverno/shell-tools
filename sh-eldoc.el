@@ -82,7 +82,7 @@
 (defun sh-eldoc-function ()
   "Return eldoc string for bash functions (builtins and those avaliable
 from `man %s'."
-  (let ((func (sh-tools-function-name)))
+  (let ((func (sh-tools-current-command)))
     (and func
          (sh-with-bash/man func
            (sh-eldoc-builtin-string func) ;; synchronously
