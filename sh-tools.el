@@ -324,36 +324,37 @@
 ;; -------------------------------------------------------------------
 ;;; REPL
 
-(defvar-local sh-tools--last-buffer nil)
-
 ;; replacement for `sh-shell-process'
-(defun sh-tools-shell-process ()
-  (if (process-live-p sh-shell-process)
-      sh-shell-process
-    (setq sh-shell-process
-          (let ((proc
-                 (cl-loop for proc in (process-list)
-                    when (and (process-live-p proc)
-                              (process-command proc)
-                              (cl-find "-i" (process-command proc) :test 'string=))
-                    return proc)))
-            (or proc
-                (get-buffer-process
-                 (let ((explicit-shell-file-name sh-shell-file))
-                   (shell))))))))
+(defun nvp-sh-get-process (&optional this-buffer)
+  (let ((buffname (and this-buffer
+                       (concat "*shell: " (buffer-name (current-buffer)) "*"))))
+    (if (and (process-live-p sh-shell-process)
+             (if buffname
+                 (string= (buffer-name
+                           (process-buffer sh-shell-process))
+                          buffname)
+               t))
+       sh-shell-process
+     (setq sh-shell-process
+           (let ((proc (nvp-shell-get-process nil buffname)))
+             (or proc
+                 (get-buffer-process
+                  (let ((explicit-shell-file-name sh-shell-file))
+                    (shell buffname)))))))))
 
-(defun sh-tools-switch-to-inf ()
-  (interactive)
-  (if (and (eq major-mode 'shell-mode)
-           sh-tools--last-buffer)
-      (pop-to-buffer sh-tools--last-buffer)
-    (setq sh-tools--last-buffer (current-buffer))
-    (pop-to-buffer (process-buffer (sh-tools-shell-process)))))
+;; switch to shell REPL, specific to this buffer with a prefix arg
+(nvp-repl-switch "sh" (:repl-mode 'shell-mode
+                       :repl-find-fn
+                       #'(lambda ()
+                           (process-buffer (nvp-sh-get-process current-prefix-arg)))
+                       :switch-fn 'pop-to-buffer)
+  (process-buffer
+   (setq sh-shell-process (nvp-sh-get-process current-prefix-arg))))
 
 ;; send selected region and step
 (defun sh-tools-send-region (beg end)
   (interactive "r")
-  (comint-send-string (sh-tools-shell-process)
+  (comint-send-string (nvp-sh-get-process)
                       (concat (buffer-substring beg end) "\n"))
   (goto-char end))
 

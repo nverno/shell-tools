@@ -33,7 +33,8 @@
   (require 'cl-lib)
   (require 'nvp-macro)
   (require 'pcomplete)
-  (defvar shells-abbrev-table))
+  (defvar shells-abbrev-table)
+  (defvar sh-shell-process))
 (autoload 'pcomplete--here "pcomplete")
 (autoload 'pcomplete-entries "pcomplete")
 (autoload 'expand-add-abbrevs "expand")
@@ -77,6 +78,21 @@
   (unless shell-tools-alias-table          ;initialize/fill the alias hash
     (shell-tools--get-aliases))
   (gethash alias shell-tools-alias-table nil))
+
+;; -------------------------------------------------------------------
+;;; Process
+
+;; look for an active shell process
+(defun nvp-shell-get-process (&optional proc-name buffer-name)
+  (cl-loop for proc in (process-list)
+     when (and (process-live-p proc)
+               (cond
+                (proc-name (string= (process-name proc) proc-name))
+                (buffer-name (string= (buffer-name (process-buffer proc))
+                                      buffer-name))
+                (t (process-command proc)
+                   (cl-find "-i" (process-command proc) :test 'string=))))
+     return proc))
 
 ;; -------------------------------------------------------------------
 ;;; Commands
