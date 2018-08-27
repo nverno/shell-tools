@@ -347,7 +347,7 @@
                        :repl-find-fn
                        #'(lambda ()
                            (process-buffer (nvp-sh-get-process current-prefix-arg)))
-                       :switch-fn 'pop-to-buffer)
+                       :repl-switch-fn 'pop-to-buffer)
   (process-buffer
    (setq sh-shell-process (nvp-sh-get-process current-prefix-arg))))
 
