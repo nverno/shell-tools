@@ -342,6 +342,9 @@
                   (let ((explicit-shell-file-name sh-shell-file))
                     (shell buffname)))))))))
 
+;; FIXME: do I always want a sh file to sending to its own shell?
+(setf (symbol-function 'sh-shell-process) 'nvp-sh-get-process)
+
 ;; switch to shell REPL, specific to this buffer with a prefix arg
 (nvp-repl-switch "sh" (:repl-mode 'shell-mode
                        :repl-find-fn
