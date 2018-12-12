@@ -31,7 +31,7 @@
 (require 'sh-script)
 
 (defvar sh-doc-types '(info param return note usage))
-(defvar sh-doc-offset-column 24)
+(defvar sh-doc-offset-column 16)
 
 (defsubst sh-doc-active-p ()
   (nth 4 (syntax-ppss)))
