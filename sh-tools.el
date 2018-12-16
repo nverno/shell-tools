@@ -363,33 +363,39 @@
   (goto-char end))
 
 ;; ------------------------------------------------------------
-;;; Cleanup
+;;; Cleanup / Align
+
 (require 'align)
 
-(defvar nvp-sh-align-exclude-list
-  `((valid
-     . ,(function (lambda () (not (sh-in-comment-or-string (point))))))))
+;; alignment rules to align '\' not in strings/comments and
+;; align end-of-line comments
+(defvar nvp-sh-align-rules-list
+  `((sh-line-continuation
+     (regexp . "\\(\\s-*\\)\\\\\\s-*$")
+     (modes  . '(sh-mode))
+     (valid  . ,(function
+                 (lambda () (save-excursion
+                         (not (sh-in-comment-or-string (point))))))))
+    (sh-eol-comments
+     (regexp . "[^ #\t\n\\\\]\\(\\s-*\\)#+.*$")
+     (group  . 1)
+     (modes  . '(sh-mode))
+     (valid  . ,(function
+                 (lambda () (save-excursion
+                         (goto-char (match-beginning 1))
+                         (and (not (bolp))
+                              (not (nth 3 (syntax-ppss)))))))))))
 
-;; add alignment rules for sh-mode
-(defun nvp-sh-align-rules ()
-  ;; don't align '\' in double quuted strings -- throws off echoing
-  ;; the default 'exc-dq-string aligns '\' in double quotes
-  (cl-pushnew
-   `(sh-exc-dq-string
-     (regexp . "\"\\([^\"]+\\)\"")
-     (modes . '(sh-mode)))
-   align-exclude-rules-list)
-  ;; (cl-pushnew 'sh-mode align-dq-string-modes)
-  (cl-pushnew 'sh-mode align-open-comment-modes)
-  (cl-pushnew
-   'sh-mode
-   (caddr (assoc 'modes (assoc 'basic-line-continuation align-rules-list)))))
+;; align region or buffer
+(defun nvp-sh-align (beg end &optional all)
+  (interactive "r\np")
+  (if all (align (point-min) (point-max))
+    (align beg end)))
 
-;; enforce uft-8-unix on save
-(defun sh-tools-cleanup-buffer ()
+;; enforce uft-8-unix and align when killing buffer
+(defun nvp-sh-cleanup-buffer ()
   (unless (eq 'utf-8-unix buffer-file-coding-system)
     (set-buffer-file-coding-system 'utf-8-unix))
-  ;; align backslashes
   (align (point-min) (point-max)))
 
 (provide 'sh-tools)
