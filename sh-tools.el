@@ -346,11 +346,12 @@
 (setf (symbol-function 'sh-shell-process) 'nvp-sh-get-process)
 
 ;; switch to shell REPL, specific to this buffer with a prefix arg
-(nvp-repl-switch "sh" (:repl-mode 'shell-mode
-                       :repl-find-fn
-                       #'(lambda ()
-                           (process-buffer (nvp-sh-get-process current-prefix-arg)))
-                       :repl-switch-fn 'pop-to-buffer)
+(nvp-repl-switch "sh"
+    (:repl-mode 'shell-mode
+     :repl-find-fn
+     #'(lambda ()
+         (process-buffer (nvp-sh-get-process current-prefix-arg)))
+     :repl-switch-fn 'pop-to-buffer)
   (process-buffer
    (setq sh-shell-process (nvp-sh-get-process current-prefix-arg))))
 
@@ -363,13 +364,30 @@
 
 ;; ------------------------------------------------------------
 ;;; Cleanup
+(require 'align)
+
+;; add alignment rules for sh-mode
+(defun nvp-sh-align-rules ()
+  ;; don't align '\' in double quuted strings -- throws off echoing
+  ;; the default 'exc-dq-string aligns '\' in double quotes
+  (cl-pushnew
+   '(sh-exc-dq-string
+     (regexp . "\"\\([^\"]+\\)\"")
+     (repeat . t)
+     (modes . '(sh-mode)))
+   align-exclude-rules-list)
+  (cl-pushnew 'sh-mode align-dq-string-modes)
+  (cl-pushnew 'sh-mode align-open-comment-modes)
+  (cl-pushnew
+   'sh-mode
+   (caddr (assoc 'modes (assoc 'basic-line-continuation align-rules-list)))))
 
 ;; enforce uft-8-unix on save
 (defun sh-tools-cleanup-buffer ()
   (unless (eq 'utf-8-unix buffer-file-coding-system)
     (set-buffer-file-coding-system 'utf-8-unix))
   ;; align backslashes
-  (align-regexp (point-min) (point-max) "\\(\\s-*\\)\\\\\\s-*$"))
+  (align (point-min) (point-max)))
 
 (provide 'sh-tools)
 ;;; sh-tools.el ends here
