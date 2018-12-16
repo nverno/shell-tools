@@ -366,17 +366,20 @@
 ;;; Cleanup
 (require 'align)
 
+(defvar nvp-sh-align-exclude-list
+  `((valid
+     . ,(function (lambda () (not (sh-in-comment-or-string (point))))))))
+
 ;; add alignment rules for sh-mode
 (defun nvp-sh-align-rules ()
   ;; don't align '\' in double quuted strings -- throws off echoing
   ;; the default 'exc-dq-string aligns '\' in double quotes
   (cl-pushnew
-   '(sh-exc-dq-string
+   `(sh-exc-dq-string
      (regexp . "\"\\([^\"]+\\)\"")
-     (repeat . t)
      (modes . '(sh-mode)))
    align-exclude-rules-list)
-  (cl-pushnew 'sh-mode align-dq-string-modes)
+  ;; (cl-pushnew 'sh-mode align-dq-string-modes)
   (cl-pushnew 'sh-mode align-open-comment-modes)
   (cl-pushnew
    'sh-mode
