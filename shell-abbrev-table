@@ -103,7 +103,8 @@
     ("ret" "return" nil :system t)
     )
   "sh mode abbrevs"
-  :parents (list shells-abbrev-table))
+  :parents (list shells-abbrev-table)
+  :enable-function 'shell-tools-abbrev-expand-p)
 
 (define-abbrev-table 'fish-mode-abbrev-table
   '()
