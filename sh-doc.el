@@ -48,9 +48,10 @@
   (interactive)
   (when (and (sh-doc-active-p)
              ;; indent documentation to offset column if necessary
-             (not (and (eq (move-to-column sh-doc-offset-column)
-                           sh-doc-offset-column)
-                       (eq (char-before) ? ))))
+             (or (not (eq (move-to-column sh-doc-offset-column)
+                          sh-doc-offset-column))
+                 (not (or (eolp)
+                          (looking-at-p "\\s-*$")))))
     (beginning-of-line)
     (if (not (looking-at-p (eval-when-compile
                              (concat "#\\s-*@" (regexp-opt sh-doc-types)))))
