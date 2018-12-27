@@ -54,7 +54,7 @@
 ;; -------------------------------------------------------------------
 ;;; Variables
 
-;; sh-script imenu
+;; for jumping b/w functions -- see `sh-imenu-generic-expression'
 (defvar sh-tools-function-re
   (nvp-concat
    "\\(?:"
@@ -67,6 +67,11 @@
 
 ;; imenu header comment regexp
 (defvar sh-tools-comment-headers-re '((nil "^###\\s-*\\(.+\\)\\s-*$" 1)))
+
+;; additional imenu regexps
+(defvar nvp-sh-imenu-extra-regexps
+  '(("Sources" "^\\(?:\\\.\\|source\\)\\s-+\\(.+\\)\\s-*$" 1)
+    ("Globals" "^\\([A-Za-z_][^=\n]*\\)=" 1)))
 
 ;; -------------------------------------------------------------------
 ;;; Utils
