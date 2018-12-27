@@ -30,18 +30,35 @@
   (require 'cl-lib))
 (require 'sh-script)
 
-(defvar sh-doc-types '(info param return note usage))
+(defvar sh-doc-types '("info" "param" "return" "note" "usage"))
 (defvar sh-doc-offset-column 16)
 
 (defsubst sh-doc-active-p ()
-  (nth 4 (syntax-ppss)))
+  (or (nth 4 (syntax-ppss))
+      (and (bolp) (looking-at-p "#"))))
 
 (defun sh-doc-insert (type)
-  (interactive
-   (list (completing-read "doc: " sh-doc-types)))
+  (interactive (list (completing-read "doc: " sh-doc-types)))
   (and (bolp) (insert "# "))
   (insert "@" type)
   (indent-to-column sh-doc-offset-column))
+
+;;;###autoload
+(defun sh-doc-indent-dwim ()
+  (interactive)
+  (when (and (sh-doc-active-p)
+             ;; indent documentation to offset column if necessary
+             (not (and (eq (move-to-column sh-doc-offset-column)
+                           sh-doc-offset-column)
+                       (eq (char-before) ? ))))
+    (beginning-of-line)
+    (if (not (looking-at-p (eval-when-compile
+                             (concat "#\\s-*@" (regexp-opt sh-doc-types)))))
+        (progn (end-of-line)            ;no info keyword, go to end of line
+               (call-interactively 'sh-doc-insert))
+      (forward-word)
+      (delete-horizontal-space)
+      (indent-to-column sh-doc-offset-column))))
 
 ;;;###autoload
 (defun sh-doc-newline-dwim ()
