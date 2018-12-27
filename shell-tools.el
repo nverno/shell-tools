@@ -97,28 +97,28 @@
 ;;; Commands
 
 ;; switch to a different shell for compiling
-(defvar-local shell-tools-shell "bash")
-(defun shell-tools-switch-shell (shell)
+(defvar-local nvp-shell-current-shell "bash")
+(defun nvp-shell-switch-shell (shell)
   (interactive
    (list (if #'ido-completing-read
              (ido-completing-read "Shell: " (shell-tools-get-shells))
            (completing-read "Shell: " (shell-tools-get-shells)))))
-  (setq shell-tools-shell shell))
+  (setq nvp-shell-current-shell shell))
 
 ;; Run script
-(defun shell-tools-basic-compile ()
+(defun nvp-shell-basic-compile ()
   (interactive)
   (let ((compile-command
-         (concat (or shell-tools-shell "bash") " "
+         (concat (or nvp-shell-current-shell "bash") " "
                  (if buffer-file-name buffer-file-name)))
         (compilation-read-command))
     (call-interactively 'compile)))
 
-(nvp-newline shell-tools-newline-dwim nil
+(nvp-newline nvp-shell-newline-dwim nil
   :pairs (("{" "}") ("(" ")")))
 
 ;; expand shell alias
-(defun shell-tools-expand-alias (alias)
+(defun nvp-shell-expand-alias (alias)
   (interactive
    (list (buffer-substring-no-properties (comint-line-beginning-position)
                                          (point))))
