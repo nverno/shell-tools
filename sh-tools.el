@@ -382,7 +382,7 @@
                  (lambda () (save-excursion
                          (not (sh-in-comment-or-string (point))))))))
     (sh-eol-comments
-     (regexp . "[^ #\t\n\\\\]\\(\\s-*\\)#+.*$")
+     (regexp . "[^ #\t\n\\\\]\\(\\s-+\\)#+.*$")
      (group  . 1)
      (modes  . '(sh-mode))
      (valid  . ,(function
