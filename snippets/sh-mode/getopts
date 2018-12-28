@@ -2,15 +2,17 @@
 # name: getopts
 # key: getopts
 # --
-OPT1="default value"
-OPT2=0
+local opt
+OPTIND=1  # reset in case of previous use
+$3="default"
+$5="default"
 
-while getopts "${1:d:s}" o
-do case "$o" in
-    {2:d}) OPT1="$OPTARG";;
-    {3:s}) OPT2=1;;
-    [?]) print >&2 "Usage: \$0 [-s] [-d seplist] file ..."
-        exit 1;;
+while getopts "${1:d:s}" opt
+do case "$opt" in
+    ${2:d}) ${3:opt1}="$OPTARG";;
+    ${4:s}) ${5:opt2}="$OPTARG";;
+    [?]) echo -e "\e[40m\e[1;32Usage: \$0 $6\e[0m"
+         exit 0;
    esac
 done
-shift $(expr $OPTIND - 1)
+shift $(($OPTIND - 1))
