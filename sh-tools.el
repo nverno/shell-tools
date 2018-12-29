@@ -399,11 +399,12 @@
 
 ;; enforce uft-8-unix and align when killing buffer
 (defun nvp-sh-cleanup-buffer ()
-  (unless (eq 'utf-8-unix buffer-file-coding-system)
-    (set-buffer-file-coding-system 'utf-8-unix))
-  (align (point-min) (point-max))
-  (and (buffer-modified-p)
-       (save-buffer)))
+  (unless buffer-read-only
+    (unless (eq 'utf-8-unix buffer-file-coding-system)
+      (set-buffer-file-coding-system 'utf-8-unix))
+    (align (point-min) (point-max))
+    (and (buffer-modified-p)
+         (save-buffer))))
 
 (provide 'sh-tools)
 ;;; sh-tools.el ends here
