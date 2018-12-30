@@ -37,7 +37,7 @@
 
 ;; mapping for shells to history rings
 (defvar he-shell-history-alist
-  '((shell-mode . comint-input-ring)
+  '((shell-mode  . comint-input-ring)
     (eshell-mode . eshell-history-ring)))
 
 ;; functions to return point at beginning of input line
@@ -48,46 +48,36 @@
   (marker-position (eshell-beginning-of-input)))
 
 (defvar he-shell-bol-alist
-  '((shell-mode . comint-line-beginning-position)
+  '((shell-mode  . comint-line-beginning-position)
     (eshell-mode . he-shell-eshell-bol)))
 
 ;; history candidates, eg eshell-history-ring, comint-input-ring
 (defvar-local he-shell-history-ring nil)
 
-;; current matches for candidate, to cycle through
-(defvar-local he-shell--matches ())
-(defvar-local he-shell--index 0)
-
 ;; Hippie expansion from shell (comint) history
 ;; OLD must be nil on first call to function, and t for
-;; successive expansions.
+;; successive expansions . 
 ;;;###autoload
 (defun try-expand-shell-history (old)
-  (and he-shell-history-ring
-       (let (expansion)
-         (unless old
-           (he-init-string (funcall he-shell-bol) (point))
-           (setq he-shell--index 0)
-           (setq he-shell--matches
-                 (and (not (equal "" he-search-string))
-                      (cl-remove-duplicates
-                       (all-completions
-                        he-search-string
-                        (ring-elements (symbol-value
-                                        he-shell-history-ring)))
-                       :test 'string=
-                       :from-end t))))
-         (when he-shell--matches
-           (setq expansion (nth he-shell--index he-shell--matches))
-           (setq he-shell--index (1+ he-shell--index))
-           ;; Setting this cycles it, so other try- functions aren't
-           ;; called
-           ;; (and (> he-shell--index (1- (length he-shell--matches)))
-           ;;      (setq he-shell--index 0))
-           )
-         (if (not expansion)
-             (ignore (and old (he-reset-string)))
-           (he-substitute-string expansion t)))))
+  (unless old
+    (he-init-string (funcall he-shell-bol) (point))
+    (unless (he-string-member he-search-string he-tried-table)
+      (setq he-tried-table (cons he-search-string he-tried-table)))
+    (setq he-expand-list                ;build expansion list
+          (and (not (equal "" he-search-string))
+               (cl-remove-duplicates
+                (all-completions
+                 he-search-string
+                 (ring-elements (symbol-value he-shell-history-ring)))
+                :test 'string=
+                :from-end t))))
+  (while (and he-expand-list            ;remove seen candidates
+              (he-string-member (car he-expand-list) he-tried-table))
+    (setq he-expand-list (cdr he-expand-list)))
+  (prog1 (not (null he-expand-list))
+    (if (not he-expand-list)
+        (and old (he-reset-string))
+      (he-substitute-string (pop he-expand-list) 'trans-case))))
 
 ;; -------------------------------------------------------------------
 ;;; Expansion using function to retrieve history elements
@@ -113,28 +103,29 @@
 
 ;; Expand from shell history using function to retrieve history and calling
 ;; function on expanded candidate
+;;;
 ;;;###autoload
 (defun try-expand-shell-history-2 (old)
-  (and he-shell-history-ring
-       (let (expansion)
-         (unless old
-           (he-init-string (funcall he-shell-bol) (point))
-           (setq he-shell--index 0)
-           (setq he-shell--matches
-                 (and (not (equal "" he-search-string))
-                      (cl-remove-duplicates
-                       (all-completions
-                        he-search-string
-                        (funcall he-shell-get-history-fn))
-                       :test 'string=
-                       :from-end t))))
-         (when he-shell--matches
-           (setq expansion (funcall he-shell-post-expand-fn
-                                    (nth he-shell--index he-shell--matches)))
-           (setq he-shell--index (1+ he-shell--index)))
-         (if (not expansion)
-             (ignore (and old (he-reset-string)))
-           (he-substitute-string expansion t)))))
+  (unless old
+    (he-init-string (funcall he-shell-bol) (point))
+    (unless (he-string-member he-search-string he-tried-table)
+      (setq he-tried-table (cons he-search-string he-tried-table)))
+    (setq he-expand-list                ;build expansion list
+          (and (not (equal "" he-search-string))
+               (cl-remove-duplicates
+                (all-completions
+                 he-search-string
+                 (funcall he-shell-get-history-fn))
+                :test 'string=
+                :from-end t))))
+  (while (and he-expand-list            ;remove seen candidates
+              (he-string-member (car he-expand-list) he-tried-table))
+    (setq he-expand-list (cdr he-expand-list)))
+  (prog1 (not (null he-expand-list))
+    (if (not he-expand-list)
+        (and old (he-reset-string))
+      (he-substitute-string
+       (funcall he-shell-post-expand-fn (pop he-expand-list)) 'trans-case))))
 
 ;; -------------------------------------------------------------------
 ;;; Expand shell aliases, eg. bash shell-expand-alias C-M-e 
@@ -167,7 +158,7 @@
   (let ((history (or history
                      (cdr (assoc major-mode he-shell-history-alist))))
         (bol (or bol-fn (cdr (assoc major-mode he-shell-bol-alist)))))
-    (when (and bol history)
+    (when (and (fboundp bol) (not (null history)))
       (setq-local he-shell-history-ring history)
       (setq-local he-shell-bol bol)
       (and expand-fn (setq-local he-shell-post-expand-fn expand-fn))
