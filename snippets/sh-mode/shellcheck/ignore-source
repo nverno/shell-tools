@@ -1,5 +1,0 @@
-# -*- mode: snippet -*-
-# name: ignore-source
-# key: scs
-# --
-# shellcheck source=/dev/null

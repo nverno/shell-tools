@@ -413,5 +413,27 @@
     (and (buffer-modified-p)
          (save-buffer))))
 
+;; -------------------------------------------------------------------
+;;; Shellcheck
+
+(declare-function xterm-color-colorize-buffer "xterm-color")
+(declare-function nvp-indicate-modeline-success "nvp-indicate")
+
+(defun nvp-sh-shellcheck ()
+  (interactive)
+  (set-process-sentinel
+   (start-process "shellcheck"
+                  (with-current-buffer (get-buffer-create "*shellcheck*")
+                    (setq buffer-read-only nil)
+                    (erase-buffer)
+                    (current-buffer))
+                  "shellcheck" buffer-file-name)
+   #'(lambda (p _m)
+       (if (zerop (process-exit-status p))
+           (nvp-indicate-modeline-success "all good")
+         (pop-to-buffer "*shellcheck*")
+         (xterm-color-colorize-buffer)
+         (view-mode)))))
+
 (provide 'sh-tools)
 ;;; sh-tools.el ends here
