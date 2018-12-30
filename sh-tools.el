@@ -35,18 +35,19 @@
   (defvar sh-shell-process)
   (defvar explicit-shell-file-name))
 (require 'shell-tools)
+(require 'sh-help)
 
+(declare-function company-sort-by-backend-importance "company")
+(declare-function company-complete "company")
+(declare-function company-doc-buffer "company")
+(declare-function company-quickhelp--doc "company-quickhelp")
 (declare-function company-quickhelp--completing-read "company-quickhelp")
 (declare-function company-quickhelp--show "company-quickhelp")
 (declare-function company-bash "company-bash")
 (declare-function company-shell "company-shell")
-(declare-function company-sort-by-backend-importance "company")
-(declare-function company-complete "company")
 (declare-function bash-completion-dynamic-complete "bash-completion")
+(declare-function bash-completion-dynamic-complete-nocomint "bash-completion")
 (declare-function sh-beginning-of-command "sh-script")
-(declare-function company-doc-buffer "company")
-(declare-function company-quickhelp--doc "company-quickhelp")
-(declare-function company-quickhelp--doc-and-meta "company-quickhelp")
 (declare-function sh-send-text "sh-script")
 
 (autoload 'string-trim "subr-x")
@@ -160,6 +161,14 @@
         (and (not (or (nth 3 syntax)
                       (nth 4 syntax)))
              (bash-completion-dynamic-complete)))))
+
+  (defun nvp-sh-bash-dynamic-complete ()
+    "Bash dynamic completion for sh-script."
+    (nvp-unless-in-comment-or-string
+      (bash-completion-dynamic-complete-nocomint
+       (save-excursion (sh-beginning-of-command) (point))
+       (point)
+       'dynamic-table)))
   
   (when (require 'bash-completion nil t)
     (setq sh-tools-company-backends
@@ -169,27 +178,26 @@
 ;; Since no doc-buffer is returned by company-capf, rewrite
 ;; company-quickhelp doc retrieval method to just call man on the
 ;; current candidates
+;; return a company-documentation buffer with either Man output or bash help
+;; for a builtin
 (defun sh-tools-doc-buffer (cmd)
-  (company-doc-buffer
-   (let ((man-page (shell-command-to-string (format "man %s" cmd))))
-     (if (or (null man-page)
-             (string= man-page "")
-             (string-prefix-p "No manual entry" man-page))
-         (shell-command-to-string
-          (format "echo \"timeout 1 %s --help\" | %s --restricted"
-                  cmd
-                  (string-trim (shell-command-to-string "which bash"))))
-       man-page))))
+  (let ((doc-str (if (sh-help-bash-builtin-p cmd)
+                     (sh-help-bash-builtin-sync cmd)
+                   (shell-command-to-string (format "man %s" cmd)))))
+    (and (not (or (member doc-str '(nil ""))
+                  (string-prefix-p "No manual entry" doc-str)))
+         (company-doc-buffer doc-str))))
 
 (defun sh-tools-quickhelp-doc (selected)
   (cl-letf (((symbol-function 'completing-read)
              #'company-quickhelp--completing-read))
-    (let* ((doc (sh-tools-doc-buffer selected))
-           (doc-and-meta (when doc
-                           (company-quickhelp--doc-and-meta doc)))
+    (let* ((doc-buff (sh-tools-doc-buffer selected))
+           (doc-and-meta
+            (with-current-buffer doc-buff
+              (company-quickhelp--docstring-from-buffer (point-min))))
            (truncated (plist-get doc-and-meta :truncated))
            (doc (plist-get doc-and-meta :doc)))
-      (unless (string= doc "")
+      (unless (member doc '(nil ""))
         (if truncated
             (concat doc "\n\n[...]")
           doc)))))
@@ -197,14 +205,14 @@
 ;; re-bind to this in `company-active-map'
 (defun sh-tools-quickhelp-toggle ()
   (interactive)
-  (let ((x-gtk-use-system-tooltips nil))
+  (let ((x-gtk-use-system-tooltips nil)
+        (company-quickhelp-delay 0.1))
     (or (x-hide-tip)
         (cl-letf (((symbol-function 'company-quickhelp--doc)
                    #'sh-tools-quickhelp-doc))
           ;; flickers the screen - cant use the timer, since it seems
           ;; that lexical binding doesn't work in that case
           (company-quickhelp--show)))))
-
 
 ;; show help buffer in other window from company-active-map
 (defun sh-tools-company-show-doc-buffer ()
@@ -223,15 +231,14 @@
     (when (require 'bash-completion nil t)
       (delq 'company-capf company-backends)
       (add-hook 'completion-at-point-functions
-                'sh-tools-bash-completion nil 'local))
+                'nvp-sh-bash-dynamic-complete nil 'local))
     ;; use local version of `company-active-map' to rebind
     ;; functions to show popup help and jump to help buffer
     (nvp-with-local-keymap company-active-map
       ("M-h" . sh-tools-quickhelp-toggle)
       ("C-h" . sh-tools-company-show-doc-buffer)))
   (cl-pushnew sh-tools-company-backends company-backends)
-  (setq-local company-transformers
-              '(company-sort-by-backend-importance)))
+  (setq-local company-transformers '(company-sort-by-backend-importance)))
 
 ;; with prefix, only complete for sourced / local functions
 (defun sh-tools-company-bash (arg)

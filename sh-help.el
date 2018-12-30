@@ -39,7 +39,7 @@
   (require 'nvp-macro)
   (require 'cl-lib)
   (defvar Man--sections))
-(require 'nvp-read) ;; parse 'man' stuff
+(require 'nvp-help) ;; parse 'man' stuff
 (autoload 'sh-tools-current-command "sh-tools")
 (autoload 'sh-tools-conditional-switch "sh-tools")
 (autoload 'Man-build-section-alist "man")
@@ -65,6 +65,9 @@
 ;; -------------------------------------------------------------------
 ;;; Utilities
 
+(defsubst sh-help-bash-builtin-p (cmd)
+  (string-match-p sh-help-bash-builtins (regexp-quote cmd)))
+
 ;; synopsis: bash -c 'help -s %s'
 ;; help:     bash -c 'help %s'
 (defsubst sh-help-bash-builtin-sync (cmd &optional synopsis)
@@ -81,8 +84,7 @@
 ;; output to BUFFER, return process
 ;; man --names-only %s | col -b
 (defun sh-help-man (cmd &optional sync buffer)
-  (let ((cmd (concat "man --names-only "
-                     (regexp-quote cmd) " | col -b")))
+  (let ((cmd (concat "man --names-only " (regexp-quote cmd) " | col -b")))
     (if sync
         (call-process-shell-command
          cmd nil (or buffer "*sh-help*"))
@@ -107,7 +109,7 @@
 ;; if bash builtin do BASH else MAN
 (defmacro sh-with-bash/man (cmd bash &rest man)
   (declare (indent 2) (indent 1))
-  `(if (string-match-p sh-help-bash-builtins ,cmd)
+  `(if (sh-help-bash-builtin-p ,cmd)
        ,bash
      ,@man))
 
@@ -142,11 +144,11 @@
 
 (defsubst sh-help--man-string (&optional section)
   (setq section (if section (concat "^" section) "^DESCRIPTION"))
-  (nvp-read-man-string section))
+  (nvp-help-man-string section))
 
 ;; parse 'man bash' conditional switches for '[[' and '['
 (defsubst sh-help--cond-switches ()
-  (nvp-read-man-switches "^CONDITIONAL EXP" "\\s-+-" "^[[:alpha:]]"))
+  (nvp-help-man-switches "^CONDITIONAL EXP" "\\s-+-" "^[[:alpha:]]"))
 
 ;; -------------------------------------------------------------------
 ;;; Cache / Lookup
