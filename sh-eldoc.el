@@ -58,13 +58,14 @@
   (sh-with-man-help cmd nil "*sh-eldoc*"
     (goto-char (point-min))
     (when (search-forward "SYNOPSIS" nil 'move)
-      (forward-line)
+      (while (not (looking-at-p (concat "\\([ \t]+" cmd "\\|^[^ \t]\\)")))
+        (forward-line))
       (skip-chars-forward " \t")
       ;; put result in cache
       (puthash
        cmd 
        (concat
-        (propertize cmd 'face 'font-lock-function-name-face) ":"
+        (propertize cmd 'face 'font-lock-function-name-face) ": "
         (and (looking-at "[^ \t]+[ \t]+\\([^\n]+\\)")
              (match-string 1))
         ;; (buffer-substring
