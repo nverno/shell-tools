@@ -421,6 +421,14 @@
 
 (defun nvp-sh-shellcheck ()
   (interactive)
+  (nvp-with-process "shellcheck" (pop-to-buffer)
+    ;; (pop-to-buffer "*shellcheck*")
+    ;; (xterm-color-colorize-buffer)
+    ;; (view-mode)
+    ))
+
+(defun nvp-sh-shellcheck ()
+  (interactive)
   (set-process-sentinel
    (start-process "shellcheck"
                   (with-current-buffer (get-buffer-create "*shellcheck*")
@@ -430,7 +438,8 @@
                   "shellcheck" buffer-file-name)
    #'(lambda (p _m)
        (if (zerop (process-exit-status p))
-           (nvp-indicate-modeline-success "all good")
+           (progn (kill-buffer "*shellcheck*")
+                  (nvp-indicate-modeline-success "all good"))
          (pop-to-buffer "*shellcheck*")
          (xterm-color-colorize-buffer)
          (view-mode)))))
