@@ -420,29 +420,33 @@
 (declare-function nvp-indicate-modeline-success "nvp-indicate")
 
 (defun nvp-sh-shellcheck ()
+  "Check current buffer with shellcheck."
   (interactive)
-  (nvp-with-process "shellcheck" (pop-to-buffer)
-    ;; (pop-to-buffer "*shellcheck*")
-    ;; (xterm-color-colorize-buffer)
-    ;; (view-mode)
-    ))
+  (nvp-with-process "shellcheck" (:proc-args (buffer-file-name))
+    (pop-to-buffer "*shellcheck*")
+    (xterm-color-colorize-buffer)
+    (view-mode)))
 
-(defun nvp-sh-shellcheck ()
+(defun nvp-sh-shellcheck-compilation-setup ()
+  "Add compilation regexp for shellcheck output."
+  (when (not (assoc 'shellcheck compilation-error-regexp-alist-alist))
+    (let ((re '(shellcheck "In \\([^ \t\n]+\\) line \\([0-9]+\\)" 1 2)))
+      (push (car re) compilation-error-regexp-alist)
+      (push re compilation-error-regexp-alist-alist))))
+
+(with-eval-after-load 'compile
+  (nvp-sh-shellcheck-compilation-setup))
+
+(defun nvp-sh-remove-re ()
   (interactive)
-  (set-process-sentinel
-   (start-process "shellcheck"
-                  (with-current-buffer (get-buffer-create "*shellcheck*")
-                    (setq buffer-read-only nil)
-                    (erase-buffer)
-                    (current-buffer))
-                  "shellcheck" buffer-file-name)
-   #'(lambda (p _m)
-       (if (zerop (process-exit-status p))
-           (progn (kill-buffer "*shellcheck*")
-                  (nvp-indicate-modeline-success "all good"))
-         (pop-to-buffer "*shellcheck*")
-         (xterm-color-colorize-buffer)
-         (view-mode)))))
+  (let ((re '(shellcheck "In \\([^ \t\n]+\\) line \\([0-9]+\\)" 1 2)))
+    (cl-delete re compilation-error-regexp-alist-alist
+               :test 'equal)))
+
+(defun nvp-sh-shellcheck-compile ()
+  (interactive)
+  (let ((compile-command (concat "shellcheck " (buffer-file-name))))
+    (nvp-basic-compile)))
 
 (provide 'sh-tools)
 ;;; sh-tools.el ends here
