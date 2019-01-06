@@ -1,8 +1,0 @@
-# -*- mode: snippet -*-
-# name: peace
-# key: peace
-# --
-if hash ${1:program} 2>/dev/null ; then
-    printf "Have $1.. peace\n"
-    return 0
-fi$0

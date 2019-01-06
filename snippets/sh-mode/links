@@ -1,8 +1,0 @@
-# -*- mode: snippet -*-
-# name: links
-# key: links
-# --
-DIR="\$( cd "\$( dirname "\${BASH_SOURCE[0]}" )" && pwd)" 
-
-ln -s -f "\$HOME/bin/install/$1/install" "\$DIR/install"
-ln -s -f "\$HOME/bin/install/$1/config" "\$DIR/config"

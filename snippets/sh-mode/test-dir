@@ -2,7 +2,4 @@
 # name: test-dir
 # key: testdir
 # --
-[[ ! -d "${1:$DEVEL}" ]] && (
-    printf "$1 not found... aborting\n"
-    exit 1
-)
+[[ ! -d "${1:$DEVEL}" ]] && _error_exit "$1 not found... aborting"

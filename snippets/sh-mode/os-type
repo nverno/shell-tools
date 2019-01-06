@@ -16,4 +16,4 @@ elif [[ "$OSTYPE" == "darwin"* ]]; then
     ${6:# ...}
 else
     echo Unknown system type.
-fi$0
+fi

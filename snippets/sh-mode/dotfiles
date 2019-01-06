@@ -1,5 +1,0 @@
-# -*- mode: snippet -*-
-# name: dotfiles
-# key: dotfiles
-# --
-[[ -f "$HOME/dotfiles" ]] && cp "$HOME/dotfiles/${1:poo}${1:$(and (> (length yas-text) 0) "/")}${2:poop}" "$HOME/.${2:$(substring yas-text 1)}"

@@ -3,5 +3,5 @@
 # key: ifpkg
 # --
 if ${1:! }dpkg-query -W $2 >/dev/null; then
-    sudo apt-get install $3
+    sudo apt install -y $3
 fi

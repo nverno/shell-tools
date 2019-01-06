@@ -1,8 +1,7 @@
 # -*- mode: snippet -*-
 # name: if exists
 # key: ifx
-# expand-env: ((yas-indent-line 'fixed))
 # --
-if [ -x $1 ]; then
+if [ -x "$1" ]; then
     $2
-fi$0
+fi

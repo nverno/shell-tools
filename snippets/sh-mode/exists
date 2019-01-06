@@ -1,7 +1,0 @@
-# -*- mode: snippet -*-
-# name: exists
-# key: exists
-# --
-exists () {
-   type "\$1" >& /dev/null ;
-}

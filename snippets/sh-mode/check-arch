@@ -1,9 +1,0 @@
-# -*- mode: snippet -*-
-# name: check arch
-# key: checkarch
-# --
-readonly __ARCH=$(_get_arch)
-local _supported=false
-for a in "\${${1:__SUPPORTED_ARCH}[@]}"; do [[ "$a" == "$__ARCH" ]] && _supported=true; done
-[ "$_supported" != "true" ] &&
-    _error_exit "script doesn't support \$(_get_arch). supported: \$$1"
