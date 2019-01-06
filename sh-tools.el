@@ -427,6 +427,12 @@
     (xterm-color-colorize-buffer)
     (view-mode)))
 
+(defun nvp-sh-shellcheck-compile ()
+  "Run shellcheck on current buffer with output to compilation buffer."
+  (interactive)
+  (let ((compile-command (concat "shellcheck " (buffer-file-name))))
+    (nvp-basic-compile)))
+
 (defun nvp-sh-shellcheck-compilation-setup ()
   "Add compilation regexp for shellcheck output."
   (when (not (assoc 'shellcheck compilation-error-regexp-alist-alist))
@@ -436,17 +442,6 @@
 
 (with-eval-after-load 'compile
   (nvp-sh-shellcheck-compilation-setup))
-
-(defun nvp-sh-remove-re ()
-  (interactive)
-  (let ((re '(shellcheck "In \\([^ \t\n]+\\) line \\([0-9]+\\)" 1 2)))
-    (cl-delete re compilation-error-regexp-alist-alist
-               :test 'equal)))
-
-(defun nvp-sh-shellcheck-compile ()
-  (interactive)
-  (let ((compile-command (concat "shellcheck " (buffer-file-name))))
-    (nvp-basic-compile)))
 
 (provide 'sh-tools)
 ;;; sh-tools.el ends here
