@@ -430,7 +430,9 @@
 (defun nvp-sh-shellcheck-compile ()
   "Run shellcheck on current buffer with output to compilation buffer."
   (interactive)
-  (let ((compile-command (concat "shellcheck " (buffer-file-name))))
+  (let ((compile-command (concat "shellcheck " (buffer-file-name)))
+        (compilation-buffer-name-function
+         #'(lambda (_m) (concat "*shellcheck: " (buffer-file-name) "*"))))
     (nvp-basic-compile)))
 
 (defun nvp-sh-shellcheck-compilation-setup ()

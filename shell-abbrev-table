@@ -93,7 +93,7 @@
   "eshell mode abbrevs"
   :parents (list shell-mode-abbrev-table))
 
-(define-abbrev-table 'sh-mode-abbrev-table
+(define-abbrev-table 'sh-mode-abbrev-tableq
   '(
     ("ro" "readonly" nil :system t)
     ("here" "DIR=\"$( cd \"$( dirname \"${BASH_SOURCE[0]}\" )\" && pwd)\""
@@ -108,9 +108,10 @@
     ("scs" "# shellcheck source=/dev/null" nil :system t)
     ("scd" ["# shellcheck disable=SC" 0 nil nil] expand-abbrev-hook :system t)
     ("utils" "# shellcheck source=/dev/null\n. ~/bin/sh/utils.sh" nil :system t)
-    ("vutils" "# shellcheck source=/dev/null\n. ~/bin/sh/versions.sh" nil :system t)
+    ("vutils" "# shellcheck source=/dev/null\n. ~/bin/sh/version-utils.sh"
+     nil :system t)
     ("gutils" "# shellcheck source=/dev/null\n. ~/bin/sh/git-utils.sh" nil :system t)
-    ("iutils" "# shellcheck source=/dev/null\n. ~/bin/install/install-utils.sh"
+    ("iutils" "# shellcheck source=/dev/null\n. ~/bin/sh/install-utils.sh"
      nil :system t)
     )
   "sh mode abbrevs"
