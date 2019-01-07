@@ -41,6 +41,7 @@
 (declare-function company-complete "company")
 (declare-function company-doc-buffer "company")
 (declare-function company-quickhelp--doc "company-quickhelp")
+(declare-function company-quickhelp--docstring-from-buffer "company-quickhelp")
 (declare-function company-quickhelp--completing-read "company-quickhelp")
 (declare-function company-quickhelp--show "company-quickhelp")
 (declare-function company-bash "company-bash")
@@ -206,7 +207,8 @@
 (defun sh-tools-quickhelp-toggle ()
   (interactive)
   (let ((x-gtk-use-system-tooltips nil)
-        (company-quickhelp-delay 0.1))
+        ;; (company-quickhelp-delay 0.1)
+        )
     (or (x-hide-tip)
         (cl-letf (((symbol-function 'company-quickhelp--doc)
                    #'sh-tools-quickhelp-doc))
@@ -418,6 +420,7 @@
 
 (declare-function xterm-color-colorize-buffer "xterm-color")
 (declare-function nvp-indicate-modeline-success "nvp-indicate")
+(autoload 'nvp-basic-compile "nvp-compile")
 
 (defun nvp-sh-shellcheck ()
   "Check current buffer with shellcheck."
