@@ -236,7 +236,7 @@
                 'nvp-sh-bash-dynamic-complete nil 'local))
     ;; use local version of `company-active-map' to rebind
     ;; functions to show popup help and jump to help buffer
-    (nvp-with-local-keymap company-active-map
+    (nvp-use-local-keymap company-active-map
       ("M-h" . sh-tools-quickhelp-toggle)
       ("C-h" . sh-tools-company-show-doc-buffer)))
   (cl-pushnew sh-tools-company-backends company-backends)
@@ -421,6 +421,7 @@
 (declare-function xterm-color-colorize-buffer "xterm-color")
 (declare-function nvp-indicate-modeline-success "nvp-indicate")
 (declare-function nvp-compile-basic "nvp-compile")
+(declare-function nvp-basic-use-local-bindings "nvp-basic")
 
 (defun nvp-sh-shellcheck ()
   "Check current buffer with shellcheck."
@@ -433,10 +434,16 @@
 (defun nvp-sh-shellcheck-compile ()
   "Run shellcheck on current buffer with output to compilation buffer."
   (interactive)
-  (let ((compile-command (concat "shellcheck " (buffer-file-name)))
-        (compilation-buffer-name-function
-         #'(lambda (_m) (concat "*shellcheck: " (buffer-file-name) "*"))))
-    (nvp-compile-with-bindings '(("q" 'kill-buffer)))))
+  (let* ((compile-command (concat "shellcheck " (buffer-file-name)))
+         (compilation-buffer-name-function
+          #'(lambda (_m) (concat "*shellcheck: " (buffer-file-name) "*")))
+         (funcs compilation-finish-functions)
+         (kill-func #'(lambda (&rest _ignored)
+                        (nvp-basic-use-local-bindings '(("q" kill-this-buffer)))
+                        ;; reset compilation-finish-functions
+                        (setq compilation-finish-functions funcs))))
+    (setq compilation-finish-functions kill-func)
+    (nvp-compile-basic)))
 
 (defun nvp-sh-shellcheck-compilation-setup ()
   "Add compilation regexp for shellcheck output."
