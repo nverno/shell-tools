@@ -4,15 +4,15 @@
 # --
 local opt $3 $5
 OPTIND=1  # reset in case of previous use
-$3="default"
+$3="default"$0
 $5="default"
 
 while getopts "${1:d:s}" opt
 do case "$opt" in
     ${2:d}) ${3:opt1}="$OPTARG";;
     ${4:s}) ${5:opt2}="$OPTARG";;
-    [?]) echo -e "\e[40m\e[1;32mUsage: \$0 $6\e[0m"
-         exit 0;
+    [?]) echo -e "\e[40m\e[1;32mUsage: ${6:`(sh-current-defun-name)`} $7\e[0m"
+         exit 1;
    esac
 done
 shift $((OPTIND - 1))

@@ -2,4 +2,4 @@
 # name: usage-with-color
 # key: use
 # --
-echo -e "\e[40m\e[1;32mUsage: \$0 $1\e[0m"; echo;
+echo -e "\e[40m\e[1;32mUsage: ${1:`(sh-current-defun-name)`} $2\e[0m"
