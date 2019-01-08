@@ -420,7 +420,7 @@
 
 (declare-function xterm-color-colorize-buffer "xterm-color")
 (declare-function nvp-indicate-modeline-success "nvp-indicate")
-(autoload 'nvp-basic-compile "nvp-compile")
+(declare-function nvp-compile-basic "nvp-compile")
 
 (defun nvp-sh-shellcheck ()
   "Check current buffer with shellcheck."
@@ -436,7 +436,7 @@
   (let ((compile-command (concat "shellcheck " (buffer-file-name)))
         (compilation-buffer-name-function
          #'(lambda (_m) (concat "*shellcheck: " (buffer-file-name) "*"))))
-    (nvp-basic-compile)))
+    (nvp-compile-basic-with-bindings '(("q" 'kill-buffer)))))
 
 (defun nvp-sh-shellcheck-compilation-setup ()
   "Add compilation regexp for shellcheck output."
