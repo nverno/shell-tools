@@ -436,7 +436,7 @@
   (let ((compile-command (concat "shellcheck " (buffer-file-name)))
         (compilation-buffer-name-function
          #'(lambda (_m) (concat "*shellcheck: " (buffer-file-name) "*"))))
-    (nvp-compile-basic-with-bindings '(("q" 'kill-buffer)))))
+    (nvp-compile-with-bindings '(("q" 'kill-buffer)))))
 
 (defun nvp-sh-shellcheck-compilation-setup ()
   "Add compilation regexp for shellcheck output."
