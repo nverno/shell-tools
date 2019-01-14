@@ -1,4 +1,5 @@
-;;; eshell-tools --- 
+;;; eshell-tools.el --- eshell helpers -*- lexical-binding: t; -*-
+;; Last modified: <2019-01-14 15:08:17>
 ;;; Commentary:
 ;;; Code:
 (eval-when-compile

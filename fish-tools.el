@@ -1,7 +1,8 @@
-;;; fish-tools --- 
+;;; fish-tools.el --- fish shell helpers -*- lexical-binding: t; -*-
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
+;; Last modified: <2019-01-14 15:08:39>
 ;; Package-Requires: 
 ;; Copyright (C) 2016, Noah Peart, all rights reserved.
 ;; Created:  4 November 2016
