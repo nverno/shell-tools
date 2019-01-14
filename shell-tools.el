@@ -38,8 +38,7 @@
 (autoload 'pcomplete-entries "pcomplete")
 (autoload 'expand-add-abbrevs "expand")
 
-(nvp-package-dir shell-tools--dir)
-(nvp-package-load-snippets shell-tools--dir)
+(nvp-package-dir shell-tools--dir 'snippets)
 
 ;; -------------------------------------------------------------------
 ;;; Utils

@@ -1,4 +1,4 @@
-;;; company-bash --- Completion for sourced functions in sh script
+;;; company-bash.el --- Completion for sourced functions in sh script -*- lexical-binding: t; -*-
 
 ;; This is free and unencumbered software released into the public domain.
 
