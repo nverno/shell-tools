@@ -38,7 +38,10 @@
 ;; mapping for shells to history rings
 (defvar he-shell-history-alist
   '((shell-mode  . comint-input-ring)
-    (eshell-mode . eshell-history-ring)))
+    (eshell-mode . eshell-history-ring)
+    ;; fallback - if comint derived mode
+    (comint-mode . comint-input-ring))
+  "Mapping of modes to history rings.")
 
 ;; functions to return point at beginning of input line
 (defvar-local he-shell-bol nil)
@@ -49,7 +52,9 @@
 
 (defvar he-shell-bol-alist
   '((shell-mode  . comint-line-beginning-position)
-    (eshell-mode . he-shell-eshell-bol)))
+    (eshell-mode . he-shell-eshell-bol)
+    (comint-mode . comint-line-beginning-position))
+  "Mapping of modes to functions returning line beginning position.")
 
 ;; history candidates, eg eshell-history-ring, comint-input-ring
 (defvar-local he-shell-history-ring nil)
@@ -82,12 +87,12 @@
 ;; -------------------------------------------------------------------
 ;;; Expansion using function to retrieve history elements
 
-(defun he-shell-get-history-default-fn (&optional input-ring)
+(defsubst he-shell-get-history-default-fn (&optional input-ring)
   (ring-elements (or input-ring
                      (symbol-value he-shell-history-ring))))
 
 ;; remove trailing ')' if first char of STR is '(', for expanding in lispy shells
-(defun he-shell-remove-trailing-paren (str)
+(defsubst he-shell-remove-trailing-paren (str)
   (and str
        (if (and (string= "(" (substring str 0 1))
                 (string= ")" (substring str -1)))
@@ -103,7 +108,6 @@
 
 ;; Expand from shell history using function to retrieve history and calling
 ;; function on expanded candidate
-;;;
 ;;;###autoload
 (defun try-expand-shell-history-2 (old)
   (unless old
@@ -153,20 +157,25 @@
 ;;; Setup 
 
 ;;;###autoload
-(defun hippie-expand-shell-setup (&optional history bol-fn history-fn expand-fn)
+(cl-defun hippie-expand-shell-setup (&key history bol-fn history-fn expand-fn)
+  "Setup shell to use hippie expansion for shell history."
   (interactive)
-  (let ((history (or history
-                     (cdr (assoc major-mode he-shell-history-alist))))
-        (bol (or bol-fn (cdr (assoc major-mode he-shell-bol-alist)))))
+  (let* ((comint-p (derived-mode-p 'comint-mode))
+         (history (or history
+                      (cdr (assoc major-mode he-shell-history-alist))
+                      (and comint-p
+                           (cdr (assoc 'comint-mode he-shell-history-alist)))))
+         (bol (or bol-fn
+                  (cdr (assoc major-mode he-shell-bol-alist))
+                  (and comint-p (cdr (assoc 'comint-mode he-shell-bol-alist))))))
     (when (and (fboundp bol) (not (null history)))
       (setq-local he-shell-history-ring history)
       (setq-local he-shell-bol bol)
-      (and expand-fn (setq-local he-shell-post-expand-fn expand-fn))
       (make-local-variable 'hippie-expand-try-functions-list)
-      (if (not history-fn)
-          (add-to-list 'hippie-expand-try-functions-list
-                       'try-expand-shell-history)
-        (setq-local he-shell-get-history-fn history-fn)
+      (if (not (or expand-fn history-fn))
+          (add-to-list 'hippie-expand-try-functions-list 'try-expand-shell-history)
+        (and expand-fn (setq-local he-shell-post-expand-fn expand-fn))
+        (and history-fn (setq-local he-shell-get-history-fn history-fn))
         (add-to-list 'hippie-expand-try-functions-list
                      'try-expand-shell-history-2)))))
 
