@@ -4,7 +4,7 @@
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
-;; Last modified: <2019-01-14 15:09:11>
+;; Last modified: <2019-01-15 00:38:23>
 ;; Package-Requires: 
 ;; Created:  4 November 2016
 
@@ -39,7 +39,7 @@
 (autoload 'pcomplete-entries "pcomplete")
 (autoload 'expand-add-abbrevs "expand")
 
-(nvp-package-dir shell-tools--dir 'snippets)
+(nvp-package-dir nvp-shell--dir 'snippets)
 
 ;; -------------------------------------------------------------------
 ;;; Utils
@@ -213,7 +213,7 @@
 ;; :system abbrevs as well
 (defun shell-tools-write-abbrevs (file)
   (interactive
-   (list (read-file-name "Write abbrevs to: " shell-tools--dir)))
+   (list (read-file-name "Write abbrevs to: " nvp-shell--dir)))
   (let ((abbrev-table-name-list '(shell-tools-abbrev-table)))
     (cl-letf (((symbol-function 'abbrev--write)
                (lambda (sym)
