@@ -4,7 +4,7 @@
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
-;; Last modified: <2019-01-14 15:09:52>
+;; Last modified: <2019-01-16 01:01:22>
 ;; Package-Requires: 
 ;; Created:  5 December 2016
 ;; Last modified: 2019-01-14 11:34:27 noah
@@ -215,7 +215,7 @@
 ;; man twice - once to get completions, and again to get popup.
 (defsubst sh-help--man-sections (cmd)
   (sh-with-man-help cmd 'sync "*sh-help*"
-    (Man-build-section-alist)
+    (Man-build-section-list)
     Man--sections))
 
 ;; when Man finishes, set point in MAN-BUFFER to be

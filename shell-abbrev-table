@@ -8,7 +8,8 @@
     ("2dn" "2>/dev/null" nil :system t)
     
     ("ddu" "ls | xargs -n 1 du -hs" nil :system t)
-    ("lgrep" "ls -all | grep " nil :system t)
+    ("lgrep" ["find . -maxdepth 1 -iregex '.*'" 1 nil nil]
+     expand-abbrev-hook :system t)
 
     ("sa" "sudo apt-get" nil :system t) 
     ("sai" "sudo apt-get install -y" nil :system t) 
@@ -34,7 +35,9 @@
     ("gitcln" "git clone https://github.com/nverno" nil :system t) 
     ("bitcln" "git clone https://bitbucket.org/nverno" nil :system t) 
     )
-  "Shells abbrevs.")
+  "Shells abbrevs."
+  :enable-function 'shell-tools-abbrev-expand-p
+  :regexp shell-tools-abbrev-re)
 
 (define-abbrev-table 'shell-mode-abbrev-table
   '()

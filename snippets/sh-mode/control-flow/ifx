@@ -3,5 +3,5 @@
 # key: ifx
 # --
 if [ -x "$1" ]; then
-    $2
+    $0
 fi

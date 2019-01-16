@@ -2,6 +2,6 @@
 # name: for_files
 # key: forf
 # --
-for file in $(find ${1:~} -type f -name "$2"); do
+for ${1:f} in \$(find ${2:~} -type f -name "$3"); do
     $0
 done

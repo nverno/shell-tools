@@ -1,5 +1,0 @@
-# -*- mode: snippet -*-
-# name: not-file
-# key: notf
-# --
-[[ ! -f "$1" ]] && _error_exit "$2"

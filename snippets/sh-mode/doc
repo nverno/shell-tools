@@ -3,5 +3,6 @@
 # key: doc
 # --
 ##
-# @info         $0
+# @info         $0`(dotimes (n (read-number "Pars: "))(insert "\n# @param        "))`
+# @return       0 on success, 1 otherwise
 ##

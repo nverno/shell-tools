@@ -4,7 +4,7 @@
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
-;; Last modified: <2019-01-15 00:38:23>
+;; Last modified: <2019-01-16 04:39:09>
 ;; Package-Requires: 
 ;; Created:  4 November 2016
 
@@ -38,8 +38,7 @@
 (autoload 'pcomplete--here "pcomplete")
 (autoload 'pcomplete-entries "pcomplete")
 (autoload 'expand-add-abbrevs "expand")
-
-(nvp-package-dir nvp-shell--dir 'snippets)
+(nvp-package-define-root :snippets t)
 
 ;; -------------------------------------------------------------------
 ;;; Utils
@@ -133,8 +132,9 @@
 
 ;; dont expand in strings or after [-:]
 (defun shell-tools-abbrev-expand-p ()
-  (not (or (memq last-input-event '(?- ?:))
-           (nth 3 (syntax-ppss)))))
+  (not (or (memq last-input-event '(?- ?: ?_))
+           (let ((ppss (syntax-ppss)))
+             (or (elt ppss 3) (elt ppss 4))))))
 
 ;; dont expand when prefixed by [-/_.]
 (defvar shell-tools-abbrev-re "\\(\\_<[_:\\.A-Za-z0-9/-]+\\)")
@@ -213,7 +213,7 @@
 ;; :system abbrevs as well
 (defun shell-tools-write-abbrevs (file)
   (interactive
-   (list (read-file-name "Write abbrevs to: " nvp-shell--dir)))
+   (list (read-file-name "Write abbrevs to: " (nvp-package-root))))
   (let ((abbrev-table-name-list '(shell-tools-abbrev-table)))
     (cl-letf (((symbol-function 'abbrev--write)
                (lambda (sym)

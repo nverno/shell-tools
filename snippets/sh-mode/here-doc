@@ -1,6 +1,6 @@
 # -*- mode: snippet -*-
-# name: here
-# key: here
+# name: here-doc
+# key: hdoc
 # --
 <<${1:EOF}
 $0
