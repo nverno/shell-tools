@@ -1,10 +1,9 @@
-;;; fish-tools.el --- fish shell helpers -*- lexical-binding: t; -*-
+;;; nvp-fish.el --- fish shell helpers -*- lexical-binding: t; -*-
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
-;; Last modified: <2019-01-14 15:08:39>
+;; Last modified: <2019-01-24 17:53:16>
 ;; Package-Requires: 
-;; Copyright (C) 2016, Noah Peart, all rights reserved.
 ;; Created:  4 November 2016
 
 ;; This file is not part of GNU Emacs.
@@ -31,10 +30,10 @@
   (defvar company-keywords-alist)
   (defvar fish-builtins)
   (defvar fish-keywords))
-(require 'shell-tools)
+(require 'nvp-shell)
 
 ;; add fish keywords / builtins for company completion
-(defun fish-tools-company-keywords ()
+(defun nvp-fish-company-keywords ()
   (when (bound-and-true-p company-keywords-alist)
     (unless (assq 'fish-mode company-keywords-alist)
       (setq company-keywords-alist
@@ -42,8 +41,8 @@
              (cons 'fish-mode (append fish-builtins fish-keywords))
              company-keywords-alist)))))
 
-(eval-after-load 'company
-  '(fish-tools-company-keywords))
+(with-eval-after-load 'company
+  (nvp-fish-company-keywords))
 
-(provide 'fish-tools)
-;;; fish-tools.el ends here
+(provide 'nvp-fish)
+;;; nvp-fish.el ends here

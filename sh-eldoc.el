@@ -4,7 +4,7 @@
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
-;; Last modified: <2019-01-14 15:09:40>
+;; Last modified: <2019-01-24 17:33:44>
 ;; Package-Requires: 
 ;; Created:  4 December 2016
 
@@ -46,8 +46,7 @@
   (or (gethash cmd sh-eldoc-cache)
       (let ((str (sh-help-bash-builtin-sync cmd 'synopsis)))
         ;; remove 'cmd: ' and trailing newline
-        (setq str (substring str (+ 2 (length cmd))
-                             (1- (length str))))
+        (setq str (substring str (+ 2 (length cmd)) (1- (length str))))
         ;; propertize CMD
         (add-text-properties
          0 (length cmd)
@@ -82,13 +81,20 @@
 
 ;;;###autoload
 (defun sh-eldoc-function ()
-  "Return eldoc string for bash functions (builtins and those avaliable
+  "Return eldoc string for bash functions (builtins and those avaliable \
 from `man %s'."
-  (let ((func (sh-tools-current-command)))
+  (let ((func (sh-help-current-command)))
     (and func
          (sh-with-bash/man func
            (sh-eldoc-builtin-string func) ;; synchronously
            (sh-eldoc-man-string func))))) ;; async
+
+;;;###autoload
+(defun sh-eldoc-setup ()
+  "Setup eldoc for sh buffer."
+  (add-function :before-until (local 'eldoc-documentation-function)
+                #'sh-eldoc-function)
+  (eldoc-mode))
 
 (provide 'sh-eldoc)
 ;;; sh-eldoc.el ends here

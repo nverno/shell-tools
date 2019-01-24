@@ -4,7 +4,7 @@
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
-;; Last modified: <2019-01-16 01:01:22>
+;; Last modified: <2019-01-24 16:18:24>
 ;; Package-Requires: 
 ;; Created:  5 December 2016
 ;; Last modified: 2019-01-14 11:34:27 noah
@@ -42,8 +42,6 @@
   (require 'cl-lib)
   (defvar Man--sections))
 (require 'nvp-help) ;; parse 'man' stuff
-(autoload 'sh-tools-current-command "sh-tools")
-(autoload 'sh-tools-conditional-switch "sh-tools")
 (autoload 'Man-build-section-alist "man")
 (autoload 'nvp-basic-temp-binding "nvp-basic")
 (autoload 'pos-tip-show "pos-tip")
@@ -66,6 +64,44 @@
   
 ;; -------------------------------------------------------------------
 ;;; Utilities
+
+;; name of current command
+(defun sh-help-current-command ()
+  (let ((ppss (syntax-ppss))
+        (start (or (cdr (bounds-of-thing-at-point 'symbol)) (point))))
+    ;; ignore comments
+    (when (not (nth 4 ppss))
+      (save-excursion
+        (catch 'done
+          (while t
+            (skip-chars-backward "^:<>)(|&\`;\[" (line-beginning-position))
+            (if (nth 3 (syntax-ppss))
+                ;; move backward out of enclosing string
+                (up-list -1 t t)
+              (throw 'done nil))))
+        (skip-syntax-forward " " start)
+        (cond
+         ;; '[[' or '['
+         ((looking-back "\\(?:^\\|[^[]\\)\\(\\[+\\)[ \t]*"
+                        (line-beginning-position))
+          (match-string 1))
+         ;; 'if' => if in situation like 'if ! hash', then
+         ;; return 'hash'
+         ((looking-at-p "if\\_>")
+          (if (looking-at "if[ \t]+!?[ \t]*\\([-+[:alnum:]]+\\)")
+              (match-string 1)
+            "if"))
+         ;; otherwise, return first symbol
+         (t (and (looking-at "[:+_\[\.[:alnum:]-]+")
+                 (match-string 0))))))))
+
+;; get conditional switch
+(defun sh-help-conditional-switch ()
+  (save-excursion
+    (skip-chars-backward "^\[" (line-beginning-position))
+    (and (not (bolp))
+         (looking-at "[ !]*\\(-[[:alpha:]]+\\)")
+         (match-string 1))))
 
 (defsubst sh-help-bash-builtin-p (cmd)
   (string-match-p sh-help-bash-builtins (regexp-quote cmd)))
@@ -294,11 +330,11 @@
   (interactive "P")
   (if (equal arg '(4))
       (call-interactively 'sh-help-command-at-point)
-    (let ((cmd (sh-tools-current-command)))
+    (let ((cmd (sh-help-current-command)))
       (cond
        ((member cmd '("[[" "["))
         ;; return help for current switch or all if not found
-        (sh-help-conditional (sh-tools-conditional-switch)))
+        (sh-help-conditional (sh-help-conditional-switch)))
        (t
         ;; with C-u C-u prompt for 'man' section and recache
         (sh-help-command-at-point

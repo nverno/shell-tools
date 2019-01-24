@@ -1,5 +1,6 @@
 (require 'ert)
-(require 'shell-tools)
+(require 'nvp-shell)
+(require 'nvp-shell-abbrev)
 
 ;; (defvar abbrev-tests--dir nil)
 ;; (when load-file-name

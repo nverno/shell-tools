@@ -1,4 +1,4 @@
-(require 'shell-tools)
+(require 'nvp-shell)
 (require 'ert)
 
 (defmacro shell--should-indent (from to)

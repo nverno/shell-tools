@@ -3,8 +3,8 @@
 ;; This is free and unencumbered software released into the public domain.
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
-;; URL: https://github.com/nverno/sh-tools
-;; Last modified: <2019-01-14 15:09:24>
+;; URL: https://github.com/nverno/shell-tools
+;; Last modified: <2019-01-24 17:59:05>
 ;; Package-Requires: 
 ;; Created: 17 August 2018
 

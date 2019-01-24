@@ -36,15 +36,15 @@
     ("bitcln" "git clone https://bitbucket.org/nverno" nil :system t) 
     )
   "Shells abbrevs."
-  :enable-function 'shell-tools-abbrev-expand-p
-  :regexp shell-tools-abbrev-re)
+  :enable-function 'nvp-abbrev-expand-not-after-punct-p
+  :regexp nvp-shell-abbrev-re)
 
 (define-abbrev-table 'shell-mode-abbrev-table
   '()
   "Shell-Mode Abbrevs."
   :parents (list shells-abbrev-table)
-  :enable-function 'shell-tools-abbrev-expand-p
-  :regexp shell-tools-abbrev-re)
+  :enable-function 'nvp-abbrev-expand-not-after-punct-p
+  :regexp nvp-shell-abbrev-re)
 
 (define-abbrev-table 'shell-alias-abbrev-table
   '(
@@ -88,8 +88,8 @@
     ("vlc" "\"$PROGRAMFILES/VideoLAN/VLC/vlc.exe\"" nil :system t))
   "Shell-Mode Aliases for crappy windows shells."
   :parents (list shell-mode-abbrev-table)
-  :enable-function 'shell-tools-abbrev-expand-p
-  :regexp shell-tools-abbrev-re)
+  :enable-function 'nvp-abbrev-expand-not-after-punct-p
+  :regexp nvp-shell-abbrev-re)
 
 (define-abbrev-table 'eshell-mode-abbrev-table
   '()
@@ -119,7 +119,7 @@
     )
   "sh mode abbrevs"
   :parents (list shells-abbrev-table)
-  :enable-function 'shell-tools-abbrev-expand-p)
+  :enable-function 'nvp-abbrev-expand-not-after-punct-p)
 
 (define-abbrev-table 'fish-mode-abbrev-table
   '()

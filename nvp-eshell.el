@@ -1,17 +1,20 @@
-;;; eshell-tools.el --- eshell helpers -*- lexical-binding: t; -*-
-;; Last modified: <2019-01-14 15:08:17>
+;;; nvp-eshell.el --- eshell helpers -*- lexical-binding: t; -*-
+;; Last modified: <2019-01-24 17:53:03>
 ;;; Commentary:
 ;;; Code:
 (eval-when-compile
   (require 'pcomplete))
 (require 'eshell)
-(require 'shell-tools)
+(require 'nvp-shell)
+(declare-function eshell-kill-input "esh-mode")
+(declare-function eshell-send-input "esh-mode")
+
 (autoload 'pcomplete--here "pcomplete")
 (autoload 'pcomplete-entries "pcomplete")
 
-;; Open or move eshell in `default-directory'.
 ;;;###autoload
-(defun eshell-tools-this-dir ()
+(defun nvp-eshell-this-dir ()
+  "Open or move eshell to `default-directory'."
   (interactive)
   (unless (get-buffer eshell-buffer-name)
     (eshell))
@@ -83,10 +86,5 @@
   (kill-buffer)
   (delete-window))
 
-;; ------------------------------------------------------------
-
-(declare-function eshell-kill-input "esh-mode")
-(declare-function eshell-send-input "esh-mode")
-
-(provide 'eshell-tools)
-;;; eshell-tools.el ends here
+(provide 'nvp-eshell)
+;;; nvp-eshell.el ends here

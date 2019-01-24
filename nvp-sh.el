@@ -1,10 +1,10 @@
-;;; sh-tools.el --- sh script helpers -*- lexical-binding: t; -*-
+;;; nvp-sh.el --- sh script helpers -*- lexical-binding: t; -*-
 
 ;; This is free and unencumbered software released into the public domain.
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
-;; Last modified: <2019-01-14 15:06:58>
+;; Last modified: <2019-01-24 17:57:50>
 ;; Package-Requires: 
 ;; Created:  5 December 2016
 
@@ -30,12 +30,9 @@
 (eval-when-compile
   (require 'nvp-macro)
   (require 'cl-lib)
-  (defvar company-backends)
-  (defvar company-transformers)
-  (defvar sh-shell)
-  (defvar sh-shell-process)
+  (require 'subr-x)
   (defvar explicit-shell-file-name))
-(require 'shell-tools)
+(require 'nvp-shell)
 (require 'sh-help)
 (require 'company)
 (require 'company-quickhelp)
@@ -52,7 +49,7 @@
 ;;; Variables
 
 ;; for jumping b/w functions -- see `sh-imenu-generic-expression'
-(defvar sh-tools-function-re
+(defvar nvp-sh-function-re
   (nvp-concat
    "\\(?:"
    ;; function FOO()
@@ -63,7 +60,7 @@
    "\\)"))
 
 ;; imenu header comment regexp
-(defvar sh-tools-comment-headers-re '((nil "^###\\s-*\\(.+\\)\\s-*$" 1)))
+(defvar nvp-sh-comment-headers-re '((nil "^###\\s-*\\(.+\\)\\s-*$" 1)))
 
 ;; additional imenu regexps
 (defvar nvp-sh-imenu-extra-regexps
@@ -73,67 +70,28 @@
 ;; -------------------------------------------------------------------
 ;;; Utils
 
-;; name of current command
-(defun sh-tools-current-command ()
-  (let ((ppss (syntax-ppss))
-        (start (or (cdr (bounds-of-thing-at-point 'symbol)) (point))))
-    ;; ignore comments
-    (when (not (nth 4 ppss))
-      (save-excursion
-        (catch 'done
-          (while t
-            (skip-chars-backward "^:<>)(|&\`;\["
-                                 (line-beginning-position))
-            (if (nth 3 (syntax-ppss))
-                ;; move backward out of enclosing string
-                (up-list -1 t t)
-              (throw 'done nil))))
-        (skip-syntax-forward " " start)
-        (cond
-         ;; '[[' or '['
-         ((looking-back "\\(?:^\\|[^[]\\)\\(\\[+\\)[ \t]*"
-                        (line-beginning-position))
-          (match-string 1))
-         ;; 'if' => if in situation like 'if ! hash', then
-         ;; return 'hash'
-         ((looking-at-p "if\\_>")
-          (if (looking-at "if[ \t]+!?[ \t]*\\([-+[:alnum:]]+\\)")
-              (match-string 1)
-            "if"))
-         ;; otherwise, return first symbol
-         (t (and (looking-at "[:+_\[\.[:alnum:]-]+")
-                 (match-string 0))))))))
-
-;; get conditional switch
-(defun sh-tools-conditional-switch ()
-  (save-excursion
-    (skip-chars-backward "^\[" (line-beginning-position))
-    (and (not (bolp))
-         (looking-at "[ !]*\\(-[[:alpha:]]+\\)")
-         (match-string 1))))
-
 ;; true if point is in heredoc
-(defsubst sh-tools--here-doc-p (point)
+(defsubst nvp-sh--here-doc-p (point)
   (eq (get-text-property point 'face) 'sh-heredoc))
 
 ;; get the here doc marker for block
-(defsubst sh-tools--here-doc-marker (&optional point)
+(defsubst nvp-sh--here-doc-marker (&optional point)
   (let ((ppss (syntax-ppss point)))
     (when (eq t (nth 3 ppss))
       (get-text-property (nth 8 ppss) 'sh-here-doc-marker))))
 
 ;; position at beginning of first line of here-doc if point is
 ;; currently in a here-doc
-(defun sh-tools-here-doc-p (point)
+(defun nvp-sh-here-doc-p (point)
   (save-excursion
     (goto-char point)
     (back-to-indentation)
     (when (looking-back "[^<]<<.*" (line-beginning-position)) ;skip opening line
       (forward-line))
-    (let ((in-heredoc (sh-tools--here-doc-p (point))))
+    (let ((in-heredoc (nvp-sh--here-doc-p (point))))
       (when in-heredoc                      ;search back until no marker
         (while (and (not (bobp))
-                    (sh-tools--here-doc-p (point)))
+                    (nvp-sh--here-doc-p (point)))
           (forward-line -1)
           (back-to-indentation))
         (point)))))
@@ -141,13 +99,13 @@
 ;; ------------------------------------------------------------
 ;;; Completion
 
-(defvar sh-tools-company-backends '(company-bash :with company-shell))
+(defvar nvp-sh-company-backends '(company-bash :with company-shell))
 
 (nvp-with-gnu
   ;; `bash-completion' is awesome
   ;; just need to redefine `comint-line-beginning-position' so
   ;; `bash-completion-dynamic-complete' can work in sh-script
-  (defun sh-tools-bash-completion ()
+  (defun nvp-sh-bash-completion ()
     (cl-letf (((symbol-function 'comint-line-beginning-position)
                #'(lambda ()
                    (save-excursion
@@ -167,7 +125,7 @@
        'dynamic-table)))
   
   (when (require 'bash-completion nil t)
-    (setq sh-tools-company-backends
+    (setq nvp-sh-company-backends
           '(company-bash :with company-capf))))
 
 ;;; company-quickhelp
@@ -176,7 +134,7 @@
 ;; current candidates
 ;; return a company-documentation buffer with either Man output or bash help
 ;; for a builtin
-(defun sh-tools-doc-buffer (cmd)
+(defun nvp-sh-doc-buffer (cmd)
   (let ((doc-str (if (sh-help-bash-builtin-p cmd)
                      (sh-help-bash-builtin-sync cmd)
                    (shell-command-to-string (format "man %s" cmd)))))
@@ -184,10 +142,10 @@
                   (string-prefix-p "No manual entry" doc-str)))
          (company-doc-buffer doc-str))))
 
-(defun sh-tools-quickhelp-doc (selected)
+(defun nvp-sh-quickhelp-doc (selected)
   (cl-letf (((symbol-function 'completing-read)
              #'company-quickhelp--completing-read))
-    (let* ((doc-buff (sh-tools-doc-buffer selected))
+    (let* ((doc-buff (nvp-sh-doc-buffer selected))
            (doc-and-meta
             (with-current-buffer doc-buff
               (company-quickhelp--docstring-from-buffer (point-min))))
@@ -199,46 +157,46 @@
           doc)))))
 
 ;; re-bind to this in `company-active-map'
-(defun sh-tools-quickhelp-toggle ()
+(defun nvp-sh-quickhelp-toggle ()
   (interactive)
   (let ((x-gtk-use-system-tooltips nil)
         ;; (company-quickhelp-delay 0.1)
         )
     (or (x-hide-tip)
         (cl-letf (((symbol-function 'company-quickhelp--doc)
-                   #'sh-tools-quickhelp-doc))
+                   #'nvp-sh-quickhelp-doc))
           ;; flickers the screen - cant use the timer, since it seems
           ;; that lexical binding doesn't work in that case
           (company-quickhelp--show)))))
 
 ;; show help buffer in other window from company-active-map
-(defun sh-tools-company-show-doc-buffer ()
+(defun nvp-sh-company-show-doc-buffer ()
   (interactive)
   (cl-letf (((symbol-function 'company-call-backend)
              #'(lambda (_type selected)
-                 (sh-tools-doc-buffer selected)
-                 "*company-documentation*")))
+                 (nvp-sh-doc-buffer selected) "*company-documentation*")))
     (company-show-doc-buffer)))
 
 ;; setup company backends with company-bash and either company-shell
 ;; or bash-completion
-(defun sh-tools-company-setup ()
+(defun nvp-sh-company-setup ()
   (make-local-variable 'company-backends)
   (nvp-with-gnu
     (when (require 'bash-completion nil t)
       (delq 'company-capf company-backends)
-      (add-hook 'completion-at-point-functions
-                'nvp-sh-bash-dynamic-complete nil 'local))
+      (add-hook 'completion-at-point-functions 'nvp-sh-bash-dynamic-complete
+                nil 'local))
     ;; use local version of `company-active-map' to rebind
     ;; functions to show popup help and jump to help buffer
     (nvp-use-local-keymap company-active-map
-      ("M-h" . sh-tools-quickhelp-toggle)
-      ("C-h" . sh-tools-company-show-doc-buffer)))
-  (cl-pushnew sh-tools-company-backends company-backends)
+      ("M-h" . nvp-sh-quickhelp-toggle)
+      ("C-h" . nvp-sh-company-show-doc-buffer)))
+  (cl-pushnew nvp-sh-company-backends company-backends)
   (setq-local company-transformers '(company-sort-by-backend-importance)))
 
 ;; with prefix, only complete for sourced / local functions
-(defun sh-tools-company-bash (arg)
+(defun nvp-sh-company-bash (arg)
+  "Temporarily use only sourced / local functions for completion."
   (interactive "P")
   (if arg
       (call-interactively 'company-bash)
@@ -249,12 +207,12 @@
 
 ;; Add additional font-locking to quoted variables
 ;; Non-nil if point in inside a double-quoted string.
-(defun sh-tools-font-lock--quoted-string-p ()
+(defun nvp-sh-font-lock--quoted-string-p ()
   (let ((state (syntax-ppss)))
     (eq (nth 3 state) ?\")))
 
 ;; Search for variables in double-quoted strings bounded by `LIMIT'.
-(defun sh-tools-font-lock--quoted-string (limit)
+(defun nvp-sh-font-lock--quoted-string (limit)
   (let (res)
     (while
         (and
@@ -262,15 +220,14 @@
                (re-search-forward
                 "\\$\\({#?\\)?\\([[:alpha:]_][[:alnum:]_]*\\|[-#?@!]\\)"
                 limit t))
-         (not (sh-tools-font-lock--quoted-string-p))))
+         (not (nvp-sh-font-lock--quoted-string-p))))
     res))
 
-(defvar sh-tools-font-lock--keywords
-  '((sh-tools-font-lock--quoted-string
-     (2 font-lock-variable-name-face prepend))))
+(defvar nvp-sh-font-lock--keywords
+  '((nvp-sh-font-lock--quoted-string (2 font-lock-variable-name-face prepend))))
 
-(defun sh-tools-font-lock ()
-  (font-lock-add-keywords nil sh-tools-font-lock--keywords)
+(defun nvp-sh-font-lock ()
+  (font-lock-add-keywords nil nvp-sh-font-lock--keywords)
   (if (fboundp #'font-lock-flush)
       (font-lock-flush)
     (when font-lock-mode
@@ -279,29 +236,29 @@
 ;; -------------------------------------------------------------------
 ;;; Commands
 
-(defun sh-tools-beginning-of-defun (&optional arg)
+(defun nvp-sh-beginning-of-defun (&optional arg)
   (interactive "^p")
-  (or (not (eq this-command 'sh-tools-beginning-of-defun))
-      (eq last-command 'sh-tools-beginning-of-defun)
+  (or (not (eq this-command 'nvp-sh-beginning-of-defun))
+      (eq last-command 'nvp-sh-beginning-of-defun)
       (and transient-mark-mode mark-active)
       (push-mark))
   (unless arg (setq arg 1))
   (cond
    ((> arg 0)
     (while (and (> arg 0)
-                (re-search-backward sh-tools-function-re nil 'move))
+                (re-search-backward nvp-sh-function-re nil 'move))
       (setq arg (1- arg))))
    (t (while (and (< arg 0)
-                  (re-search-forward sh-tools-function-re nil))
+                  (re-search-forward nvp-sh-function-re nil))
         (setq arg (1+ arg))))))
 
 ;; move to beginning of next function if there is one
-(defun sh-tools-next-defun ()
+(defun nvp-sh-next-defun ()
   (interactive)
   (condition-case nil
       (progn
         (forward-line 1)
-        (sh-tools-beginning-of-defun -1)
+        (nvp-sh-beginning-of-defun -1)
         (beginning-of-line))
     (error (forward-line -1))))
 
@@ -309,9 +266,9 @@
 
 ;; toggle here-doc indentation:
 ;; open with '<<-' and use only leading tabs for indentation
-(defun sh-tools-toggle-here-doc-indent (point)
+(defun nvp-sh-toggle-here-doc-indent (point)
   (interactive "d")
-  (let ((start-pos (sh-tools-here-doc-p point)))
+  (let ((start-pos (nvp-sh-here-doc-p point)))
     (when start-pos
       (save-excursion
         (goto-char start-pos)
@@ -322,8 +279,8 @@
               (insert "-")
             (delete-char 1))
           (forward-to-indentation)      ;skip past opening line
-          (setq marker (sh-tools--here-doc-marker))
-          (while (and (sh-tools--here-doc-p (point))
+          (setq marker (nvp-sh--here-doc-marker))
+          (while (and (nvp-sh--here-doc-p (point))
                       (not (looking-at-p marker)))
             (delete-horizontal-space)
             (and indent                  ;toggle indentation
@@ -335,6 +292,8 @@
 
 ;; replacement for `sh-shell-process'
 (defun nvp-sh-get-process (&optional this-buffer)
+  "Replacement for `sh-shell-process'.
+Optionally return process specific to THIS-BUFFER."
   (let ((buffname (and this-buffer
                        (concat "*shell: " (buffer-name (current-buffer)) "*"))))
     (if (and (process-live-p sh-shell-process)
@@ -365,7 +324,8 @@
    (setq sh-shell-process (nvp-sh-get-process current-prefix-arg))))
 
 ;; send selected region and step
-(defun sh-tools-send-region (beg end)
+(defun nvp-sh-send-region (beg end)
+  "Send selected region from BEG to END to associated shell process."
   (interactive "r")
   (comint-send-string (nvp-sh-get-process)
                       (concat (buffer-substring beg end) "\n"))
@@ -410,45 +370,5 @@
     (and (buffer-modified-p)
          (save-buffer))))
 
-;; -------------------------------------------------------------------
-;;; Shellcheck
-
-(declare-function xterm-color-colorize-buffer "xterm-color")
-(declare-function nvp-indicate-modeline-success "nvp-indicate")
-(declare-function nvp-compile-basic "nvp-compile")
-(declare-function nvp-basic-use-local-bindings "nvp-basic")
-
-(defun nvp-sh-shellcheck ()
-  "Check current buffer with shellcheck."
-  (interactive)
-  (nvp-with-process "shellcheck" (:proc-args (buffer-file-name))
-    (pop-to-buffer "*shellcheck*")
-    (xterm-color-colorize-buffer)
-    (view-mode)))
-
-(defun nvp-sh-shellcheck-compile ()
-  "Run shellcheck on current buffer with output to compilation buffer."
-  (interactive)
-  (let* ((compile-command (concat "shellcheck " (buffer-file-name)))
-         (compilation-buffer-name-function
-          #'(lambda (_m) (concat "*shellcheck: " (buffer-file-name) "*")))
-         (funcs compilation-finish-functions)
-         (kill-func #'(lambda (&rest _ignored)
-                        (nvp-basic-use-local-bindings '(("q" kill-this-buffer)))
-                        ;; reset compilation-finish-functions
-                        (setq compilation-finish-functions funcs))))
-    (setq compilation-finish-functions kill-func)
-    (nvp-compile-basic)))
-
-(defun nvp-sh-shellcheck-compilation-setup ()
-  "Add compilation regexp for shellcheck output."
-  (when (not (assoc 'shellcheck compilation-error-regexp-alist-alist))
-    (let ((re '(shellcheck "In \\([^ \t\n]+\\) line \\([0-9]+\\)" 1 2)))
-      (push (car re) compilation-error-regexp-alist)
-      (push re compilation-error-regexp-alist-alist))))
-
-(with-eval-after-load 'compile
-  (nvp-sh-shellcheck-compilation-setup))
-
-(provide 'sh-tools)
-;;; sh-tools.el ends here
+(provide 'nvp-sh)
+;;; nvp-sh.el ends here

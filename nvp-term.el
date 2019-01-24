@@ -1,15 +1,13 @@
-;;; term-x.el --- term mode -*- lexical-binding: t; -*-
+;;; nvp-term.el --- term mode -*- lexical-binding: t; -*-
 
 ;; This is free and unencumbered software released into the public domain.
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; Maintainer: Noah Peart <noah.v.peart@gmail.com>
-;; Last modified: <2019-01-14 15:07:22>
+;; Last modified: <2019-01-24 18:16:34>
 ;; URL: https://github.com/nverno/shell-tools
 ;; Package-Requires: 
 ;; Created: 13 January 2019
-;; Version: 0.0.1
-;; Keywords:
 
 ;; This file is not part of GNU Emacs.
 ;;
@@ -45,5 +43,5 @@
       (term-send-eof)
     (delete-char 1)))
 
-(provide 'term-x)
-;;; term-x.el ends here
+(provide 'nvp-term)
+;;; nvp-term.el ends here
