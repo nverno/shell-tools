@@ -1,5 +1,0 @@
-# -*- mode: snippet -*-
-# name: test-dir
-# key: testdir
-# --
-[[ ! -d "${1:$DEVEL}" ]] && _error_exit "$1 not found... aborting"
