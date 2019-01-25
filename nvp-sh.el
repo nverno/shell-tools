@@ -4,7 +4,7 @@
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
-;; Last modified: <2019-01-24 17:57:50>
+;; Last modified: <2019-01-24 23:02:59>
 ;; Package-Requires: 
 ;; Created:  5 December 2016
 
@@ -369,6 +369,21 @@ Optionally return process specific to THIS-BUFFER."
     (align (point-min) (point-max))
     (and (buffer-modified-p)
          (save-buffer))))
+
+;; -------------------------------------------------------------------
+;;; Yas / Snippets
+
+(defun nvp-sh-current-defun ()
+  "Find name of function containing point.
+Like `sh-current-defun-name' but ignore variables."
+  (save-excursion
+    (end-of-line)
+    (when (re-search-backward nvp-sh-function-re nil 'move)
+      (or (match-string-no-properties 1)
+          (match-string-no-properties 2)))))
+
+(defun nvp-sh-yas-defun-or-script ()
+  (or (nvp-sh-current-defun) (nvp-bfn)))
 
 (provide 'nvp-sh)
 ;;; nvp-sh.el ends here

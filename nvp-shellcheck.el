@@ -2,7 +2,7 @@
 
 ;; This is free and unencumbered software released into the public domain.
 
-;; Last modified: <2019-01-24 15:59:47>
+;; Last modified: <2019-01-24 23:22:12>
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; Maintainer: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
@@ -44,6 +44,7 @@
     (xterm-color-colorize-buffer)
     (view-mode)))
 
+;;;###autoload
 (defun nvp-shellcheck-compile ()
   "Run shellcheck on current buffer with output to compilation buffer."
   (interactive)
