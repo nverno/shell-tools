@@ -4,7 +4,7 @@
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
-;; Last modified: <2019-01-25 01:04:47>
+;; Last modified: <2019-01-25 01:11:25>
 ;; Package-Requires: 
 ;; Created:  5 December 2016
 
@@ -126,17 +126,11 @@
         (beginning-of-line))
     (error (forward-line -1))))
 
-(defun nvp-sh-wrap-quotes (&optional _arg)
-  (interactive "P")
-  (let ((tab (copy-syntax-table sh-mode-syntax-table)))
-    ;; (modify-syntax-entry ?$ "w" tab)
-    ;; (modify-syntax-entry ?{ "w" tab)
-    ;; (modify-syntax-entry ?} "w" tab)
-    ;; (modify-syntax-entry ?\( "w" tab)
-    ;; (modify-syntax-entry ?\) "w" tab)
-    ;; (modify-syntax-entry ?- "w" tab)
-    (with-syntax-table tab
-      (sp-wrap-with-pair "\""))))
+;; (defun nvp-sh-wrap-quotes (&optional _arg)
+;;   (interactive "P")
+;;   (let ((tab (copy-syntax-table sh-mode-syntax-table)))
+;;     (with-syntax-table tab
+;;       (sp-wrap-with-pair "\""))))
 
 ;;; Toggle
 
