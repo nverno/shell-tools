@@ -4,7 +4,7 @@
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
-;; Last modified: <2019-01-25 01:11:25>
+;; Last modified: <2019-01-25 17:42:15>
 ;; Package-Requires: 
 ;; Created:  5 December 2016
 
@@ -161,33 +161,28 @@
 ;;; Completion
 
 (defvar nvp-sh-company-backends '(company-bash :with company-shell))
+(when (require 'bash-completion nil t)
+  (setq nvp-sh-company-backends '(company-bash :with company-capf)))
 
-(nvp-with-gnu
-  ;; `bash-completion' is awesome
-  ;; just need to redefine `comint-line-beginning-position' so
-  ;; `bash-completion-dynamic-complete' can work in sh-script
-  (defun nvp-sh-bash-completion ()
-    (cl-letf (((symbol-function 'comint-line-beginning-position)
-               #'(lambda ()
-                   (save-excursion
-                     (sh-beginning-of-command)
-                     (point)))))
-      (let ((syntax (syntax-ppss)))
-        (and (not (or (nth 3 syntax)
-                      (nth 4 syntax)))
-             (bash-completion-dynamic-complete)))))
+(defun nvp-sh-dynamic-complete-vars ()
+  "Complete local variables, but fail if none match to delegate to bash completion."
+  (nvp-unless-in-comment
+    (save-excursion
+        (skip-chars-forward "[:alnum:]_")
+        (let ((end (point))
+              (_ (skip-chars-backward "[:alnum:]_"))
+              (start (point)))
+          (when (eq (char-before start) ?$)
+            (let ((vars (sh--vars-before-point)))
+              (and (not (null (try-completion
+                               (buffer-substring-no-properties start end) vars)))
+                   (list start end vars))))))))
 
-  (defun nvp-sh-bash-dynamic-complete ()
-    "Bash dynamic completion for sh-script."
-    (nvp-unless-in-comment-or-string
-      (bash-completion-dynamic-complete-nocomint
-       (save-excursion (sh-beginning-of-command) (point))
-       (point)
-       'dynamic-table)))
-  
-  (when (require 'bash-completion nil t)
-    (setq nvp-sh-company-backends
-          '(company-bash :with company-capf))))
+(defun nvp-sh-dynamic-complete-bash ()
+  "Bash dynamic completion for sh-script (doesn't get local variables)."
+  (nvp-unless-in-comment
+    (bash-completion-dynamic-complete-nocomint
+     (save-excursion (sh-beginning-of-command)) (point) 'dynamic-table)))
 
 ;;; company-quickhelp
 ;; Since no doc-buffer is returned by company-capf, rewrite
@@ -240,12 +235,15 @@
 
 ;; setup company backends with company-bash and either company-shell
 ;; or bash-completion
-(defun nvp-sh-company-setup ()
+(defun nvp-sh-completion-setup ()
   (make-local-variable 'company-backends)
   (nvp-with-gnu
     (when (require 'bash-completion nil t)
       (delq 'company-capf company-backends)
-      (add-hook 'completion-at-point-functions 'nvp-sh-bash-dynamic-complete
+      (add-hook 'completion-at-point-functions 'nvp-sh-dynamic-complete-bash
+                nil 'local)
+      ;; allow completion of local variables as well
+      (add-hook 'completion-at-point-functions 'nvp-sh-dynamic-complete-vars
                 nil 'local))
     ;; use local version of `company-active-map' to rebind
     ;; functions to show popup help and jump to help buffer

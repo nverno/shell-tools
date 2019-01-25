@@ -2,6 +2,6 @@
 # name: if-string
 # key: ifn
 # --
-if [ -n "$2" ]; then
+if [ -n "\$$2" ]; then
     $0
 fi
