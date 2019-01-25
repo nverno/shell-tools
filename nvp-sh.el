@@ -4,7 +4,7 @@
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
-;; Last modified: <2019-01-24 23:02:59>
+;; Last modified: <2019-01-25 01:04:47>
 ;; Package-Requires: 
 ;; Created:  5 December 2016
 
@@ -42,6 +42,7 @@
 (declare-function company-shell "company-shell")
 (declare-function bash-completion-dynamic-complete "bash-completion")
 (declare-function bash-completion-dynamic-complete-nocomint "bash-completion")
+(declare-function sp-wrap-with-pair "smartparens")
 
 (autoload 'string-trim "subr-x")
 
@@ -95,6 +96,72 @@
           (forward-line -1)
           (back-to-indentation))
         (point)))))
+
+;; -------------------------------------------------------------------
+;;; Commands
+
+(defun nvp-sh-beginning-of-defun (&optional arg)
+  (interactive "^p")
+  (or (not (eq this-command 'nvp-sh-beginning-of-defun))
+      (eq last-command 'nvp-sh-beginning-of-defun)
+      (and transient-mark-mode mark-active)
+      (push-mark))
+  (unless arg (setq arg 1))
+  (cond
+   ((> arg 0)
+    (while (and (> arg 0)
+                (re-search-backward nvp-sh-function-re nil 'move))
+      (setq arg (1- arg))))
+   (t (while (and (< arg 0)
+                  (re-search-forward nvp-sh-function-re nil))
+        (setq arg (1+ arg))))))
+
+;; move to beginning of next function if there is one
+(defun nvp-sh-next-defun ()
+  (interactive)
+  (condition-case nil
+      (progn
+        (forward-line 1)
+        (nvp-sh-beginning-of-defun -1)
+        (beginning-of-line))
+    (error (forward-line -1))))
+
+(defun nvp-sh-wrap-quotes (&optional _arg)
+  (interactive "P")
+  (let ((tab (copy-syntax-table sh-mode-syntax-table)))
+    ;; (modify-syntax-entry ?$ "w" tab)
+    ;; (modify-syntax-entry ?{ "w" tab)
+    ;; (modify-syntax-entry ?} "w" tab)
+    ;; (modify-syntax-entry ?\( "w" tab)
+    ;; (modify-syntax-entry ?\) "w" tab)
+    ;; (modify-syntax-entry ?- "w" tab)
+    (with-syntax-table tab
+      (sp-wrap-with-pair "\""))))
+
+;;; Toggle
+
+;; toggle here-doc indentation:
+;; open with '<<-' and use only leading tabs for indentation
+(defun nvp-sh-toggle-here-doc-indent (point)
+  (interactive "d")
+  (let ((start-pos (nvp-sh-here-doc-p point)))
+    (when start-pos
+      (save-excursion
+        (goto-char start-pos)
+        (search-forward-regexp "[^<]<<" (line-end-position) 'move)
+        (let ((indent (not (eq ?- (char-after))))
+              marker)
+          (if indent                    ;toggle preceding '-'
+              (insert "-")
+            (delete-char 1))
+          (forward-to-indentation)      ;skip past opening line
+          (setq marker (nvp-sh--here-doc-marker))
+          (while (and (nvp-sh--here-doc-p (point))
+                      (not (looking-at-p marker)))
+            (delete-horizontal-space)
+            (and indent                  ;toggle indentation
+                 (insert "\t"))
+            (forward-to-indentation)))))))
 
 ;; ------------------------------------------------------------
 ;;; Completion
@@ -232,60 +299,6 @@
       (font-lock-flush)
     (when font-lock-mode
       (font-lock-ensure (point-min) (point-max)))))
-
-;; -------------------------------------------------------------------
-;;; Commands
-
-(defun nvp-sh-beginning-of-defun (&optional arg)
-  (interactive "^p")
-  (or (not (eq this-command 'nvp-sh-beginning-of-defun))
-      (eq last-command 'nvp-sh-beginning-of-defun)
-      (and transient-mark-mode mark-active)
-      (push-mark))
-  (unless arg (setq arg 1))
-  (cond
-   ((> arg 0)
-    (while (and (> arg 0)
-                (re-search-backward nvp-sh-function-re nil 'move))
-      (setq arg (1- arg))))
-   (t (while (and (< arg 0)
-                  (re-search-forward nvp-sh-function-re nil))
-        (setq arg (1+ arg))))))
-
-;; move to beginning of next function if there is one
-(defun nvp-sh-next-defun ()
-  (interactive)
-  (condition-case nil
-      (progn
-        (forward-line 1)
-        (nvp-sh-beginning-of-defun -1)
-        (beginning-of-line))
-    (error (forward-line -1))))
-
-;;; Toggle
-
-;; toggle here-doc indentation:
-;; open with '<<-' and use only leading tabs for indentation
-(defun nvp-sh-toggle-here-doc-indent (point)
-  (interactive "d")
-  (let ((start-pos (nvp-sh-here-doc-p point)))
-    (when start-pos
-      (save-excursion
-        (goto-char start-pos)
-        (search-forward-regexp "[^<]<<" (line-end-position) 'move)
-        (let ((indent (not (eq ?- (char-after))))
-              marker)
-          (if indent                    ;toggle preceding '-'
-              (insert "-")
-            (delete-char 1))
-          (forward-to-indentation)      ;skip past opening line
-          (setq marker (nvp-sh--here-doc-marker))
-          (while (and (nvp-sh--here-doc-p (point))
-                      (not (looking-at-p marker)))
-            (delete-horizontal-space)
-            (and indent                  ;toggle indentation
-                 (insert "\t"))
-            (forward-to-indentation)))))))
 
 ;; -------------------------------------------------------------------
 ;;; REPL

@@ -4,7 +4,7 @@
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
-;; Last modified: <2019-01-14 15:08:52>
+;; Last modified: <2019-01-25 00:24:39>
 ;; Package-Requires: 
 ;; Created:  7 December 2016
 
@@ -135,7 +135,7 @@
 ;; -------------------------------------------------------------------
 ;;; Expand shell aliases, eg. bash shell-expand-alias C-M-e 
 
-(autoload 'shell-tools-get-alias "shell-tools")
+(autoload 'nvp-shell-get-alias "nvp-shell")
 
 ;;;###autoload
 (defun try-expand-shell-alias (old)
@@ -145,7 +145,7 @@
         (he-init-string (comint-line-beginning-position) (point))
         (if (not (he-string-member he-search-string he-tried-table))
             (setq he-tried-table (cons he-search-string he-tried-table)))
-        (let ((alias (shell-tools-get-alias he-search-string)))
+        (let ((alias (nvp-shell-get-alias he-search-string)))
           (when alias                   ;substitute once and return nil
             (he-substitute-string alias)
             (setq he-expand-list nil)
