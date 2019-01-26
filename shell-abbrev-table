@@ -112,7 +112,7 @@
     ("ll" "_log" nil :system t)
     ;; shellcheck
     ("scs" "# shellcheck source=/dev/null" nil :system t)
-    ("scd" ["# shellcheck disable=SC" 0 nil nil] expand-abbrev-hook :system t)
+    ("scd" ["# shellcheck disable=SC2" 0 nil nil] expand-abbrev-hook :system t)
     ("utils" "# shellcheck source=/dev/null\n. ~/bin/sh/utils.sh" nil :system t)
     ("vutils" "# shellcheck source=/dev/null\n. ~/bin/sh/version-utils.sh"
      nil :system t)
