@@ -4,7 +4,7 @@
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
-;; Last modified: <2019-01-25 19:53:24>
+;; Last modified: <2019-01-25 23:09:58>
 ;; Package-Requires: 
 ;; Created:  5 December 2016
 
@@ -166,38 +166,6 @@ Used to set `end-of-defun-function'."
       (goto-char (car parens))
       (and (eq (char-after) ?{)
            (narrow-to-region (point) (progn (forward-sexp) (point)))))))
-
-;; (defun nvp-sh-beginning-of-defun (&optional arg)
-;;   (interactive "^p")
-;;   (or (not (eq this-command 'nvp-sh-beginning-of-defun))
-;;       (eq last-command 'nvp-sh-beginning-of-defun)
-;;       (and transient-mark-mode mark-active)
-;;       (push-mark))
-;;   (unless arg (setq arg 1))
-;;   (cond
-;;    ((> arg 0)
-;;     (while (and (> arg 0)
-;;                 (re-search-backward nvp-sh-function-re nil 'move))
-;;       (setq arg (1- arg))))
-;;    (t (while (and (< arg 0)
-;;                   (re-search-forward nvp-sh-function-re nil))
-;;         (setq arg (1+ arg))))))
-
-;; move to beginning of next function if there is one
-(defun nvp-sh-next-defun ()
-  (interactive)
-  (condition-case nil
-      (progn
-        (forward-line 1)
-        (nvp-sh-beginning-of-defun -1)
-        (beginning-of-line))
-    (error (forward-line -1))))
-
-;; (defun nvp-sh-wrap-quotes (&optional _arg)
-;;   (interactive "P")
-;;   (let ((tab (copy-syntax-table sh-mode-syntax-table)))
-;;     (with-syntax-table tab
-;;       (sp-wrap-with-pair "\""))))
 
 ;;; Toggle
 
