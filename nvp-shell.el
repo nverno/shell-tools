@@ -4,7 +4,7 @@
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
-;; Last modified: <2019-01-24 17:53:50>
+;; Last modified: <2019-01-25 21:59:38>
 ;; Package-Requires: 
 ;; Created:  4 November 2016
 
@@ -118,16 +118,17 @@
 (nvp-newline nvp-shell-newline-dwim nil
   :pairs (("{" "}") ("(" ")")))
 
-(defun nvp-shell-expand-alias (alias)
-  "Expand shell ALIAS."
-  (interactive
-   (list (buffer-substring-no-properties (comint-line-beginning-position)
-                                         (point))))
-  (let ((exp (nvp-shell-get-alias alias)))
-    (when exp
-      (comint-bol)
-      (insert exp)
-      (delete-region (point) (point-at-eol)))))
+(defun nvp-shell-expand-alias ()
+  "Expand shell alias."
+  (interactive)
+  (skip-syntax-backward " " (comint-line-beginning-position))
+  (unless (eq (point) (comint-line-beginning-position))
+    (pcase-let* ((`(,start . ,end) (bounds-of-thing-at-point 'symbol))
+                 (exp (nvp-shell-get-alias
+                       (buffer-substring-no-properties start end))))
+      (when exp
+        (delete-region start end)
+        (insert exp)))))
 
 ;; -------------------------------------------------------------------
 ;;; Pcomplete 

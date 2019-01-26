@@ -4,7 +4,7 @@
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
-;; Last modified: <2019-01-25 17:42:15>
+;; Last modified: <2019-01-25 19:53:24>
 ;; Package-Requires: 
 ;; Created:  5 December 2016
 
@@ -97,24 +97,91 @@
           (back-to-indentation))
         (point)))))
 
+(defun nvp-sh-current-defun ()
+  "Find name of function containing point.
+Like `sh-current-defun-name' but ignore variables."
+  (save-excursion
+    (end-of-line)
+    (when (re-search-backward nvp-sh-function-re nil 'move)
+      (or (match-string-no-properties 1)
+          (match-string-no-properties 2)))))
+
+;;; Navigation
+(defsubst nvp-sh-looking-at-beginning-of-defun ()
+  (save-excursion
+    (beginning-of-line 1)
+    (looking-at-p nvp-sh-function-re)))
+
+(defun nvp-sh--beginning-of-defun (&optional arg)
+  "Internal implementation for function navigation.
+With positive ARG search backwards."
+  (when (or (null arg) (= arg 0)) (setq arg 1))
+  (let ((search-fn (if (> arg 0)
+                       #'re-search-backward
+                     #'re-search-forward))
+        (pos (point-marker)))
+    (and (< arg 0)                          ;searching forward -- skip current func
+         (nvp-sh-looking-at-beginning-of-defun)
+         (end-of-line 1))
+    (funcall search-fn nvp-sh-function-re nil 'move)
+    (if (nvp-sh-looking-at-beginning-of-defun)
+        (or (beginning-of-line 1) (point))  ;found function
+      (and (goto-char pos) nil))))          ;failed to find one
+
+(defun nvp-sh-beginning-of-defun (&optional arg)
+  "Move to beginning of defun.
+With positive ARG search backwards, otherwise forwards.
+Used to set `beginning-of-defun-function'."
+  (when (or (null arg) (= arg 0)) (setq arg 1))
+  (let (found)
+    (while (and (not (= arg 0))
+                (let ((keep-searching-p (nvp-sh--beginning-of-defun arg)))
+                  (when (and keep-searching-p (null found))
+                    (setq found t))
+                  keep-searching-p))
+      (setq arg (if (> arg 0) (1- arg) (1+ arg))))
+    found))
+
+(defun nvp-sh-end-of-defun ()
+  "Move point to end of current function.
+Used to set `end-of-defun-function'."
+  (when (or (nvp-sh-looking-at-beginning-of-defun) ;find beginning
+            (nvp-sh-beginning-of-defun 1)
+            (nvp-sh-beginning-of-defun -1))
+    (beginning-of-line)
+    (when (search-forward "{" nil 'move) ;move to opening '{' and jump sexp
+      (forward-char -1)
+      (forward-sexp)
+      (point))))
+
 ;; -------------------------------------------------------------------
 ;;; Commands
 
-(defun nvp-sh-beginning-of-defun (&optional arg)
-  (interactive "^p")
-  (or (not (eq this-command 'nvp-sh-beginning-of-defun))
-      (eq last-command 'nvp-sh-beginning-of-defun)
-      (and transient-mark-mode mark-active)
-      (push-mark))
-  (unless arg (setq arg 1))
-  (cond
-   ((> arg 0)
-    (while (and (> arg 0)
-                (re-search-backward nvp-sh-function-re nil 'move))
-      (setq arg (1- arg))))
-   (t (while (and (< arg 0)
-                  (re-search-forward nvp-sh-function-re nil))
-        (setq arg (1+ arg))))))
+(defun nvp-sh-narrow-to-defun ()
+  "Return character address of current function if point is inside one."
+  (save-excursion
+    (widen)
+    (when-let* ((ppss (syntax-ppss))
+                (parens (nth 9 ppss)))   ;start of outermost parens
+      (goto-char (car parens))
+      (and (eq (char-after) ?{)
+           (narrow-to-region (point) (progn (forward-sexp) (point)))))))
+
+;; (defun nvp-sh-beginning-of-defun (&optional arg)
+;;   (interactive "^p")
+;;   (or (not (eq this-command 'nvp-sh-beginning-of-defun))
+;;       (eq last-command 'nvp-sh-beginning-of-defun)
+;;       (and transient-mark-mode mark-active)
+;;       (push-mark))
+;;   (unless arg (setq arg 1))
+;;   (cond
+;;    ((> arg 0)
+;;     (while (and (> arg 0)
+;;                 (re-search-backward nvp-sh-function-re nil 'move))
+;;       (setq arg (1- arg))))
+;;    (t (while (and (< arg 0)
+;;                   (re-search-forward nvp-sh-function-re nil))
+;;         (setq arg (1+ arg))))))
 
 ;; move to beginning of next function if there is one
 (defun nvp-sh-next-defun ()
@@ -164,6 +231,13 @@
 (when (require 'bash-completion nil t)
   (setq nvp-sh-company-backends '(company-bash :with company-capf)))
 
+;; (defun nvp-sh-vars-before-point ()
+;;   "Collect variables in current context."
+;;   (let* ((ppss (syntax-ppss))
+;;          (func-p (nth ))
+;;          (in-func ())))
+;;   )
+
 (defun nvp-sh-dynamic-complete-vars ()
   "Complete local variables, but fail if none match to delegate to bash completion."
   (nvp-unless-in-comment
@@ -172,11 +246,13 @@
         (let ((end (point))
               (_ (skip-chars-backward "[:alnum:]_"))
               (start (point)))
-          (when (eq (char-before start) ?$)
-            (let ((vars (sh--vars-before-point)))
-              (and (not (null (try-completion
-                               (buffer-substring-no-properties start end) vars)))
-                   (list start end vars))))))))
+          (when (or (eq (char-before) ?$)
+                    (and (eq (char-before) ?{)
+                         (eq (char-before (1- start)) ?$)))
+            (list start end
+                  (completion-table-dynamic
+                   (lambda (s) (all-completions s (sh--vars-before-point))))
+                  :exclusive 'no))))))
 
 (defun nvp-sh-dynamic-complete-bash ()
   "Bash dynamic completion for sh-script (doesn't get local variables)."
@@ -378,17 +454,20 @@ Optionally return process specific to THIS-BUFFER."
 ;; -------------------------------------------------------------------
 ;;; Yas / Snippets
 
-(defun nvp-sh-current-defun ()
-  "Find name of function containing point.
-Like `sh-current-defun-name' but ignore variables."
-  (save-excursion
-    (end-of-line)
-    (when (re-search-backward nvp-sh-function-re nil 'move)
-      (or (match-string-no-properties 1)
-          (match-string-no-properties 2)))))
-
 (defun nvp-sh-yas-defun-or-script ()
   (or (nvp-sh-current-defun) (nvp-bfn)))
+
+;; -------------------------------------------------------------------
+;;; Setup local variables
+
+(defun nvp-sh-setup-hook ()
+  "Define local variables to be called in hook."
+  (setq-local beginning-of-defun-function 'nvp-sh-beginning-of-defun)
+  (setq-local end-of-defun-function 'nvp-sh-end-of-defun)
+  (setq-local align-rules-list nvp-sh-align-rules-list)
+  (nvp-sh-font-lock)
+  (nvp-sh-completion-setup)
+  (add-hook 'kill-buffer-hook 'nvp-sh-cleanup-buffer nil 'local))
 
 (provide 'nvp-sh)
 ;;; nvp-sh.el ends here

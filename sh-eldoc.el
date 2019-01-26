@@ -4,7 +4,7 @@
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
-;; Last modified: <2019-01-24 17:33:44>
+;; Last modified: <2019-01-25 20:23:05>
 ;; Package-Requires: 
 ;; Created:  4 December 2016
 
@@ -88,13 +88,6 @@ from `man %s'."
          (sh-with-bash/man func
            (sh-eldoc-builtin-string func) ;; synchronously
            (sh-eldoc-man-string func))))) ;; async
-
-;;;###autoload
-(defun sh-eldoc-setup ()
-  "Setup eldoc for sh buffer."
-  (add-function :before-until (local 'eldoc-documentation-function)
-                #'sh-eldoc-function)
-  (eldoc-mode))
 
 (provide 'sh-eldoc)
 ;;; sh-eldoc.el ends here

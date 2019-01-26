@@ -3,7 +3,7 @@
 ;; This is free and unencumbered software released into the public domain.
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
-;; Last modified: <2019-01-14 15:07:43>
+;; Last modified: <2019-01-25 20:22:57>
 ;; URL: https://github.com/nverno/shell-tools
 ;; Package-Requires: 
 ;; Created:  8 November 2016
@@ -101,7 +101,7 @@
 
 (defun company-bash--prefix ()
   (and (derived-mode-p 'sh-mode)
-       (not (company-in-string-or-comment))
+       (not (nth 4 (syntax-ppss)))
        (company-grab-symbol)))
 
 (defun company-bash--annotation (candidate)
