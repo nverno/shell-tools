@@ -4,7 +4,7 @@
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
-;; Last modified: <2019-01-26 20:35:02>
+;; Last modified: <2019-01-27 06:24:16>
 ;; Package-Requires: 
 ;; Created:  5 December 2016
 ;; Last modified: 2019-01-14 11:34:27 noah
@@ -330,6 +330,7 @@
 ;; and find help for that.  If in [[ ... ]] or [ ... ],
 ;; show help for current switch, eg. "-d", or all possible switches
 ;;;###autoload
+
 (defun sh-help-at-point (arg)
   (interactive "P")
   (if (equal arg '(4))

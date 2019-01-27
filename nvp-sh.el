@@ -4,7 +4,7 @@
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
-;; Last modified: <2019-01-26 22:41:36>
+;; Last modified: <2019-01-27 01:53:16>
 ;; Package-Requires: 
 ;; Created:  5 December 2016
 
@@ -227,20 +227,18 @@ Used to set `end-of-defun-function'."
 ;; setup company backends with company-bash and either company-shell
 ;; or bash-completion
 (defun nvp-sh-completion-setup ()
-  (make-local-variable 'company-backends)
+  (set (make-local-variable 'company-backends) (remq 'company-capf company-backends))
   (nvp-with-gnu
     (when (require 'bash-completion nil t)
-      (delq 'company-capf company-backends)
-      (add-hook 'completion-at-point-functions 'nvp-sh-dynamic-complete-bash
-                nil 'local)
+      ;; use bash-completion + completion for variables / sourced functions
+      (add-hook 'completion-at-point-functions 'nvp-sh-dynamic-complete-bash nil t)
       ;; allow completion of local variables as well
-      (add-hook 'completion-at-point-functions 'nvp-sh-dynamic-complete-vars
-                nil 'local))
-    ;; use local version of `company-active-map' to rebind
-    ;; functions to show popup help and jump to help buffer
-    (nvp-use-local-keymap company-active-map
-      ("M-h" . nvp-sh-quickhelp-toggle)
-      ("C-h" . nvp-sh-company-show-doc-buffer)))
+      (add-hook 'completion-at-point-functions 'nvp-sh-dynamic-complete-vars nil t)))
+  ;; use local version of `company-active-map' to rebind
+  ;; functions to show popup help and jump to help buffer
+  (nvp-use-local-keymap company-active-map
+    ("M-h" . nvp-sh-quickhelp-toggle)
+    ("C-h" . nvp-sh-company-show-doc-buffer))
   (cl-pushnew nvp-sh-company-backends company-backends)
   (setq-local company-transformers '(company-sort-by-backend-importance)))
 
@@ -248,8 +246,7 @@ Used to set `end-of-defun-function'."
 (defun nvp-sh-company-bash (arg)
   "Temporarily use only sourced / local functions for completion."
   (interactive "P")
-  (if arg
-      (call-interactively 'company-bash)
+  (if arg (call-interactively 'company-bash)
     (company-complete)))
 
 ;; -------------------------------------------------------------------
