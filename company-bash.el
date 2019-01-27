@@ -3,7 +3,7 @@
 ;; This is free and unencumbered software released into the public domain.
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
-;; Last modified: <2019-01-25 20:22:57>
+;; Last modified: <2019-01-26 16:59:04>
 ;; URL: https://github.com/nverno/shell-tools
 ;; Package-Requires: 
 ;; Created:  8 November 2016
@@ -27,8 +27,7 @@
 
 ;;; Commentary:
 
-;; Provides completion for functions sourced in bash scripts, as
-;; well as jump to location.
+;; Completion for local variables and sourced functions.
 
 ;;; Code:
 (eval-when-compile

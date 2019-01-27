@@ -4,7 +4,7 @@
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
-;; Last modified: <2019-01-25 23:09:58>
+;; Last modified: <2019-01-26 21:30:41>
 ;; Package-Requires: 
 ;; Created:  5 December 2016
 
@@ -26,6 +26,15 @@
 ;; Floor, Boston, MA 02110-1301, USA.
 
 ;;; Commentary:
+
+;; TODO:
+;;   - somehow merge local variable completion with bash-completion
+;;   - restrict local variable candidates to the current context + globals
+;;   - fix narrowing
+;;   - create docstrings from function headers
+;;   - jump to sourced functions
+;;   - don't leave sourced scripts sitting around in buffers
+
 ;;; Code:
 (eval-when-compile
   (require 'nvp-macro)
@@ -83,7 +92,7 @@
 
 ;; position at beginning of first line of here-doc if point is
 ;; currently in a here-doc
-(defun nvp-sh-here-doc-p (point)
+(defun nvp-sh-here-doc-start-pos (point)
   (save-excursion
     (goto-char point)
     (back-to-indentation)
@@ -106,7 +115,24 @@ Like `sh-current-defun-name' but ignore variables."
       (or (match-string-no-properties 1)
           (match-string-no-properties 2)))))
 
+(defun nvp-sh-narrow-lexically ()
+  "Like `narrow-to-defun', but only narrow if point is actually inside a function.
+Retrun point at start of function if narrowing was done."
+  (save-excursion
+    (widen)
+    (when-let* ((ppss (syntax-ppss))
+                (parens (nth 9 ppss)))   ;start of outermost parens
+      (goto-char (car parens))
+      (and (eq (char-after) ?{)
+           (progn
+             (narrow-to-region (point) (progn (forward-sexp) (point)))
+             (car parens))))))
+
+;; -------------------------------------------------------------------
 ;;; Navigation
+;; commands to enable `beginning-of-defun', `end-of-defun', `narrow-to-defun',
+;; etc. to work properly in sh buffers
+
 (defsubst nvp-sh-looking-at-beginning-of-defun ()
   (save-excursion
     (beginning-of-line 1)
@@ -154,44 +180,6 @@ Used to set `end-of-defun-function'."
       (forward-sexp)
       (point))))
 
-;; -------------------------------------------------------------------
-;;; Commands
-
-(defun nvp-sh-narrow-to-defun ()
-  "Return character address of current function if point is inside one."
-  (save-excursion
-    (widen)
-    (when-let* ((ppss (syntax-ppss))
-                (parens (nth 9 ppss)))   ;start of outermost parens
-      (goto-char (car parens))
-      (and (eq (char-after) ?{)
-           (narrow-to-region (point) (progn (forward-sexp) (point)))))))
-
-;;; Toggle
-
-;; toggle here-doc indentation:
-;; open with '<<-' and use only leading tabs for indentation
-(defun nvp-sh-toggle-here-doc-indent (point)
-  (interactive "d")
-  (let ((start-pos (nvp-sh-here-doc-p point)))
-    (when start-pos
-      (save-excursion
-        (goto-char start-pos)
-        (search-forward-regexp "[^<]<<" (line-end-position) 'move)
-        (let ((indent (not (eq ?- (char-after))))
-              marker)
-          (if indent                    ;toggle preceding '-'
-              (insert "-")
-            (delete-char 1))
-          (forward-to-indentation)      ;skip past opening line
-          (setq marker (nvp-sh--here-doc-marker))
-          (while (and (nvp-sh--here-doc-p (point))
-                      (not (looking-at-p marker)))
-            (delete-horizontal-space)
-            (and indent                  ;toggle indentation
-                 (insert "\t"))
-            (forward-to-indentation)))))))
-
 ;; ------------------------------------------------------------
 ;;; Completion
 
@@ -199,12 +187,20 @@ Used to set `end-of-defun-function'."
 (when (require 'bash-completion nil t)
   (setq nvp-sh-company-backends '(company-bash :with company-capf)))
 
-;; (defun nvp-sh-vars-before-point ()
-;;   "Collect variables in current context."
-;;   (let* ((ppss (syntax-ppss))
-;;          (func-p (nth ))
-;;          (in-func ())))
-;;   )
+
+(defun nvp-sh-vars-before-point ()
+  "Collect variables in current lexical context."
+  (save-excursion
+    (if (not (string= sh-shell "bash"))
+        (sh--vars-before-point)
+      (let ((func-start (nvp-sh-narrow-lexically))
+            vars)
+        (widen)
+        ;; collect local variables
+        (while (re-search-backward "[ \t]*local[ \t]\\([^=\n]+\\)" func-start 'move)
+          (dolist (var (split-string (match-string 1) " \t" 'omit " \t"))
+            (push var vars)))
+        vars))))
 
 (defun nvp-sh-dynamic-complete-vars ()
   "Complete local variables, but fail if none match to delegate to bash completion."
@@ -228,7 +224,37 @@ Used to set `end-of-defun-function'."
     (bash-completion-dynamic-complete-nocomint
      (save-excursion (sh-beginning-of-command)) (point) 'dynamic-table)))
 
-;;; company-quickhelp
+;; setup company backends with company-bash and either company-shell
+;; or bash-completion
+(defun nvp-sh-completion-setup ()
+  (make-local-variable 'company-backends)
+  (nvp-with-gnu
+    (when (require 'bash-completion nil t)
+      (delq 'company-capf company-backends)
+      (add-hook 'completion-at-point-functions 'nvp-sh-dynamic-complete-bash
+                nil 'local)
+      ;; allow completion of local variables as well
+      (add-hook 'completion-at-point-functions 'nvp-sh-dynamic-complete-vars
+                nil 'local))
+    ;; use local version of `company-active-map' to rebind
+    ;; functions to show popup help and jump to help buffer
+    (nvp-use-local-keymap company-active-map
+      ("M-h" . nvp-sh-quickhelp-toggle)
+      ("C-h" . nvp-sh-company-show-doc-buffer)))
+  (cl-pushnew nvp-sh-company-backends company-backends)
+  (setq-local company-transformers '(company-sort-by-backend-importance)))
+
+;; with prefix, only complete for sourced / local functions
+(defun nvp-sh-company-bash (arg)
+  "Temporarily use only sourced / local functions for completion."
+  (interactive "P")
+  (if arg
+      (call-interactively 'company-bash)
+    (company-complete)))
+
+;; -------------------------------------------------------------------
+;;; Documentaion
+
 ;; Since no doc-buffer is returned by company-capf, rewrite
 ;; company-quickhelp doc retrieval method to just call man on the
 ;; current candidates
@@ -277,60 +303,28 @@ Used to set `end-of-defun-function'."
                  (nvp-sh-doc-buffer selected) "*company-documentation*")))
     (company-show-doc-buffer)))
 
-;; setup company backends with company-bash and either company-shell
-;; or bash-completion
-(defun nvp-sh-completion-setup ()
-  (make-local-variable 'company-backends)
-  (nvp-with-gnu
-    (when (require 'bash-completion nil t)
-      (delq 'company-capf company-backends)
-      (add-hook 'completion-at-point-functions 'nvp-sh-dynamic-complete-bash
-                nil 'local)
-      ;; allow completion of local variables as well
-      (add-hook 'completion-at-point-functions 'nvp-sh-dynamic-complete-vars
-                nil 'local))
-    ;; use local version of `company-active-map' to rebind
-    ;; functions to show popup help and jump to help buffer
-    (nvp-use-local-keymap company-active-map
-      ("M-h" . nvp-sh-quickhelp-toggle)
-      ("C-h" . nvp-sh-company-show-doc-buffer)))
-  (cl-pushnew nvp-sh-company-backends company-backends)
-  (setq-local company-transformers '(company-sort-by-backend-importance)))
-
-;; with prefix, only complete for sourced / local functions
-(defun nvp-sh-company-bash (arg)
-  "Temporarily use only sourced / local functions for completion."
-  (interactive "P")
-  (if arg
-      (call-interactively 'company-bash)
-    (company-complete)))
-
 ;; ------------------------------------------------------------
 ;;; Font-lock
 
 ;; Add additional font-locking to quoted variables
 ;; Non-nil if point in inside a double-quoted string.
-(defun nvp-sh-font-lock--quoted-string-p ()
-  (let ((state (syntax-ppss)))
-    (eq (nth 3 state) ?\")))
+(defsubst nvp-sh-font-lock--quoted-p ()
+  (eq (nth 3 (syntax-ppss)) ?\"))
 
 ;; Search for variables in double-quoted strings bounded by `LIMIT'.
-(defun nvp-sh-font-lock--quoted-string (limit)
+(defun nvp-sh-font-lock--quoted-vars (limit)
   (let (res)
-    (while
-        (and
-         (setq res
-               (re-search-forward
-                "\\$\\({#?\\)?\\([[:alpha:]_][[:alnum:]_]*\\|[-#?@!]\\)"
-                limit t))
-         (not (nvp-sh-font-lock--quoted-string-p))))
+    (while (and (setq res
+                      (re-search-forward
+                       "\\$\\({#?\\)?\\([[:alpha:]_][[:alnum:]_]*\\|[-#?@!*]\\)"
+                       limit t))
+                (not (nvp-sh-font-lock--quoted-p))))
     res))
 
-(defvar nvp-sh-font-lock--keywords
-  '((nvp-sh-font-lock--quoted-string (2 font-lock-variable-name-face prepend))))
-
 (defun nvp-sh-font-lock ()
-  (font-lock-add-keywords nil nvp-sh-font-lock--keywords)
+  "Add font-locking for quoted variables."
+  (font-lock-add-keywords
+   nil '((nvp-sh-font-lock--quoted-vars (2 font-lock-variable-name-face prepend))))
   (if (fboundp #'font-lock-flush)
       (font-lock-flush)
     (when font-lock-mode
@@ -424,6 +418,39 @@ Optionally return process specific to THIS-BUFFER."
 
 (defun nvp-sh-yas-defun-or-script ()
   (or (nvp-sh-current-defun) (nvp-bfn)))
+
+;; -------------------------------------------------------------------
+;;; Toggle
+
+;; toggle here-doc indentation:
+;; open with '<<-' and use only leading tabs for indentation
+(defun nvp-sh-toggle-here-doc-indent (point)
+  (interactive "d")
+  (let ((start-pos (nvp-sh-here-doc-start-pos point)))
+    (when start-pos
+      (save-excursion
+        (goto-char start-pos)
+        (search-forward-regexp "[^<]<<" (line-end-position) 'move)
+        (let ((indent (not (eq ?- (char-after))))
+              marker)
+          (if indent                    ;toggle preceding '-'
+              (insert "-")
+            (delete-char 1))
+          (forward-to-indentation)      ;skip past opening line
+          (setq marker (nvp-sh--here-doc-marker))
+          (while (and (nvp-sh--here-doc-p (point))
+                      (not (looking-at-p marker)))
+            (delete-horizontal-space)
+            (and indent                  ;toggle indentation
+                 (insert "\t"))
+            (forward-to-indentation)))))))
+
+(defun nvp-sh-toggle-fontification ()
+  (interactive)
+  (if (eq last-command this-command)
+      (font-lock-refresh-defaults)
+    (font-lock-flush)
+    (font-lock-ensure)))
 
 ;; -------------------------------------------------------------------
 ;;; Setup local variables

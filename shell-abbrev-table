@@ -107,9 +107,9 @@
     ("ret" "return" nil :system t)
     ;; i/o
     ("eecho" ["(>&2 echo \"\")" 2 nil nil] expand-abbrev-hook :system t)
-    ("ee" "_error_exit" nil :system t)
-    ("ii" "_info" nil :system t)
-    ("ll" "_log" nil :system t)
+    ("ee" ["_error_exit \"\"" 1 nil nil] expand-abbrev-hook :system t)
+    ("ii" ["_info \"\"" 1 nil nil] expand-abbrev-hook :system t)
+    ("ll" ["_log \"\"" 1 nil nil] expand-abbrev-hook :system t)
     ;; shellcheck
     ("scs" "# shellcheck source=/dev/null" nil :system t)
     ("scd" ["# shellcheck disable=SC2" 0 nil nil] expand-abbrev-hook :system t)
