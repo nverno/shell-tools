@@ -4,7 +4,7 @@
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
-;; Last modified: <2019-01-26 21:30:41>
+;; Last modified: <2019-01-26 22:41:36>
 ;; Package-Requires: 
 ;; Created:  5 December 2016
 
@@ -311,20 +311,23 @@ Used to set `end-of-defun-function'."
 (defsubst nvp-sh-font-lock--quoted-p ()
   (eq (nth 3 (syntax-ppss)) ?\"))
 
-;; Search for variables in double-quoted strings bounded by `LIMIT'.
-(defun nvp-sh-font-lock--quoted-vars (limit)
+;; add fontification to double quoted stuff
+(defun nvp-sh-fontify-quoted (regex limit)
   (let (res)
-    (while (and (setq res
-                      (re-search-forward
-                       "\\$\\({#?\\)?\\([[:alpha:]_][[:alnum:]_]*\\|[-#?@!*]\\)"
-                       limit t))
+    (while (and (setq res (re-search-forward regex limit 'move))
                 (not (nvp-sh-font-lock--quoted-p))))
     res))
 
 (defun nvp-sh-font-lock ()
-  "Add font-locking for quoted variables."
+  "Add font-locking for quoted variables and quoted backquoted execs."
   (font-lock-add-keywords
-   nil '((nvp-sh-font-lock--quoted-vars (2 font-lock-variable-name-face prepend))))
+   nil
+   `((,(apply-partially
+        'nvp-sh-fontify-quoted
+        "\\$\\({#?\\)?\\([[:alpha:]_][[:alnum:]_]*\\|[-#?@!*]\\)")
+      (2 font-lock-variable-name-face prepend))
+     (,(apply-partially 'nvp-sh-fontify-quoted "`\\s-*\\([[:alnum:]_\\-]+\\)[^`]*`")
+      (1 'sh-quoted-exec prepend))))
   (if (fboundp #'font-lock-flush)
       (font-lock-flush)
     (when font-lock-mode
@@ -447,10 +450,9 @@ Optionally return process specific to THIS-BUFFER."
 
 (defun nvp-sh-toggle-fontification ()
   (interactive)
-  (if (eq last-command this-command)
+  (if (not (eq last-command this-command))
       (font-lock-refresh-defaults)
-    (font-lock-flush)
-    (font-lock-ensure)))
+    (nvp-sh-font-lock)))
 
 ;; -------------------------------------------------------------------
 ;;; Setup local variables
