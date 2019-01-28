@@ -2,7 +2,7 @@
 
 ;; This is free and unencumbered software released into the public domain.
 
-;; Last modified: <2019-01-24 23:22:12>
+;; Last modified: <2019-01-28 05:18:24>
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; Maintainer: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
@@ -39,10 +39,11 @@
 (defun nvp-shellcheck ()
   "Check current buffer with shellcheck."
   (interactive)
-  (nvp-with-process "shellcheck" (:proc-args (buffer-file-name))
-    (pop-to-buffer "*shellcheck*")
-    (xterm-color-colorize-buffer)
-    (view-mode)))
+  (nvp-with-process "shellcheck" :proc-args ((buffer-file-name))
+    :on-failure (progn
+                  (pop-to-buffer "*shellcheck*")
+                  (xterm-color-colorize-buffer)
+                  (view-mode))))
 
 ;;;###autoload
 (defun nvp-shellcheck-compile ()
