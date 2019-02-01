@@ -1,10 +1,10 @@
-;;; sh-help.el --- help-at-point for sh -*- lexical-binding: t; -*-
+;;; nvp-sh-help.el --- help-at-point for sh-script -*- lexical-binding: t; -*-
 
 ;; This is free and unencumbered software released into the public domain.
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
-;; Last modified: <2019-01-27 06:24:16>
+;; Last modified: <2019-01-31 21:51:09>
 ;; Package-Requires: 
 ;; Created:  5 December 2016
 ;; Last modified: 2019-01-14 11:34:27 noah
@@ -42,12 +42,12 @@
   (require 'cl-lib)
   (defvar Man--sections))
 (require 'nvp-help) ;; parse 'man' stuff
-(autoload 'Man-build-section-alist "man")
+(autoload 'Man-build-section-list "man")
 (autoload 'nvp-basic-temp-binding "nvp-basic")
 (autoload 'pos-tip-show "pos-tip")
 
 ;; ignore ':', not symbolized to match strings
-(defvar sh-help-bash-builtins
+(defvar nvp-sh-help-bash-builtins
   (eval-when-compile
     (concat
      (nvp-re-opt
@@ -66,7 +66,7 @@
 ;;; Utilities
 
 ;; name of current command
-(defun sh-help-current-command ()
+(defun nvp-sh-help-current-command ()
   (let ((ppss (syntax-ppss))
         (start (or (cdr (bounds-of-thing-at-point 'symbol)) (point))))
     ;; ignore comments
@@ -100,23 +100,23 @@
                  (match-string 0))))))))
 
 ;; get conditional switch
-(defun sh-help-conditional-switch ()
+(defun nvp-sh-help-conditional-switch ()
   (save-excursion
     (skip-chars-backward "^\[" (line-beginning-position))
     (and (not (bolp))
          (looking-at "[ !]*\\(-[[:alpha:]]+\\)")
          (match-string 1))))
 
-(defsubst sh-help-bash-builtin-p (cmd)
-  (string-match-p sh-help-bash-builtins (regexp-quote cmd)))
+(defsubst nvp-sh-help-bash-builtin-p (cmd)
+  (string-match-p nvp-sh-help-bash-builtins (regexp-quote cmd)))
 
 ;; synopsis: bash -c 'help -s %s'
 ;; help:     bash -c 'help %s'
-(defsubst sh-help-bash-builtin-sync (cmd &optional synopsis)
+(defsubst nvp-sh-help-bash-builtin-sync (cmd &optional synopsis)
   (shell-command-to-string
    (concat "bash -c 'help " (and synopsis "-s ") cmd "'")))
 
-(defun sh-help-bash-builtin (cmd &optional sync buffer)
+(defun nvp-sh-help-bash-builtin (cmd &optional sync buffer)
   (let ((cmd (concat "bash -c 'help " cmd "'"))
         (buffer (or buffer "*sh-help*")))
     (if sync
@@ -125,7 +125,7 @@
 
 ;; output to BUFFER, return process
 ;; man --names-only %s | col -b
-(defun sh-help-man (cmd &optional sync buffer)
+(defun nvp-sh-help-man (cmd &optional sync buffer)
   (let ((cmd (concat "man --names-only " (regexp-quote cmd) " | col -b")))
     (if sync
         (call-process-shell-command
@@ -139,10 +139,10 @@
   `(let ((buffer (get-buffer-create (or ,buffer "*sh-help*"))))
      ,(if sync
           `(with-current-buffer buffer
-             (sh-help-man ,cmd 'sync (current-buffer))
+             (nvp-sh-help-man ,cmd 'sync (current-buffer))
              ,@body)
         `(set-process-sentinel
-          (sh-help-man ,cmd nil buffer)
+          (nvp-sh-help-man ,cmd nil buffer)
           #'(lambda (p _m)
               (when (zerop (process-exit-status p))
                 (with-current-buffer buffer
@@ -151,7 +151,7 @@
 ;; if bash builtin do BASH else MAN
 (defmacro sh-with-bash/man (cmd bash &rest man)
   (declare (indent 2) (indent 1))
-  `(if (sh-help-bash-builtin-p ,cmd)
+  `(if (nvp-sh-help-bash-builtin-p ,cmd)
        ,bash
      ,@man))
 
@@ -163,12 +163,12 @@
      (if ,sync
          (with-current-buffer buffer
              (apply (sh-with-bash/man ,cmd
-                      'sh-help-bash-builtin
-                      'sh-help-man)
+                      'nvp-sh-help-bash-builtin
+                      'nvp-sh-help-man)
                     ,cmd 'sync `(,buffer))
              ,@body)
        (set-process-sentinel
-        (apply (sh-with-bash/man ,cmd 'sh-help-bash-builtin 'sh-help-man)
+        (apply (sh-with-bash/man ,cmd 'nvp-sh-help-bash-builtin 'nvp-sh-help-man)
                ,cmd nil `(,buffer))
         #'(lambda (p _m)
             (when (zerop (process-exit-status p))
@@ -178,68 +178,68 @@
 ;; -------------------------------------------------------------------
 ;;; Parse output
 
-(defsubst sh-help--builtin-string ()
+(defsubst nvp-sh-help--builtin-string ()
   (goto-char (point-min))
   ;; skip synopsis
   ;; (forward-line 1)
   (buffer-substring (point) (point-max)))
 
-(defsubst sh-help--man-string (&optional section)
+(defsubst nvp-sh-help--man-string (&optional section)
   (setq section (if section (concat "^" section) "^DESCRIPTION"))
   (nvp-help-man-string section))
 
 ;; parse 'man bash' conditional switches for '[[' and '['
-(defsubst sh-help--cond-switches ()
+(defsubst nvp-sh-help--cond-switches ()
   (nvp-help-man-switches "^CONDITIONAL EXP" "\\s-+-" "^[[:alpha:]]"))
 
 ;; -------------------------------------------------------------------
 ;;; Cache / Lookup
 
-(defvar sh-help-cache (make-hash-table :test 'equal))
-(defvar sh-help-conditional-cache (make-hash-table :test 'equal))
+(defvar nvp-sh-help-cache (make-hash-table :test 'equal))
+(defvar nvp-sh-help-conditional-cache (make-hash-table :test 'equal))
 
 ;; return help string for CMD synchronously, cache result
-(defun sh-help--function-string (cmd &optional section recache)
+(defun nvp-sh-help--function-string (cmd &optional section recache)
   (or (and (not recache)
-           (gethash cmd sh-help-cache))
+           (gethash cmd nvp-sh-help-cache))
       (sh-with-help cmd 'sync "*sh-help*"
         (prog1
             (let ((res (sh-with-bash/man cmd
-                         (sh-help--builtin-string)
-                         (sh-help--man-string section))))
-              (puthash cmd res sh-help-cache)
+                         (nvp-sh-help--builtin-string)
+                         (nvp-sh-help--man-string section))))
+              (puthash cmd res nvp-sh-help-cache)
               res)
           (erase-buffer)))))
 
 ;; return conditional help string
-(defun sh-help--conditional-string (switch)
-  (or (gethash switch sh-help-conditional-cache)
-      (gethash "all" sh-help-conditional-cache)
+(defun nvp-sh-help--conditional-string (switch)
+  (or (gethash switch nvp-sh-help-conditional-cache)
+      (gethash "all" nvp-sh-help-conditional-cache)
       (progn
-        (sh-help--cache-conditionals)
-        (sh-help--conditional-string switch))))
+        (nvp-sh-help--cache-conditionals)
+        (nvp-sh-help--conditional-string switch))))
 
-;; make sh-help-conditional-cache
-(defun sh-help--cache-conditionals ()
+;; make nvp-sh-help-conditional-cache
+(defun nvp-sh-help--cache-conditionals ()
   (sh-with-help "bash" 'sync "*sh-help*"
-    (let ((entries (sh-help--cond-switches)))
+    (let ((entries (nvp-sh-help--cond-switches)))
       (dolist (entry entries)
         ;; key by -%s if possible
         (if (string-match "^\\(-[[:alnum:]]+\\).*" (car entry))
             (puthash (match-string 1 (car entry))
                      (concat (car entry) "\n" (cdr entry))
-                     sh-help-conditional-cache)
+                     nvp-sh-help-conditional-cache)
           ;; otherwise just use entry, for things like
           ;; "string = string" from man
           (puthash (car entry) (cdr entry)
-                   sh-help-conditional-cache)))
+                   nvp-sh-help-conditional-cache)))
       ;; make one big entry for everything
       (puthash
        "all" (mapconcat
               #'(lambda (entry) (concat (car entry) "\n" (cdr entry)))
               entries
               "\n")
-       sh-help-conditional-cache))
+       nvp-sh-help-conditional-cache))
     (erase-buffer)))
 
 ;; -------------------------------------------------------------------
@@ -253,15 +253,15 @@
 
 ;;; Man sections for completing read. Not optimal, currently calls
 ;; man twice - once to get completions, and again to get popup.
-(defsubst sh-help--man-sections (cmd)
+(defsubst nvp-sh-help--man-sections (cmd)
   (sh-with-man-help cmd 'sync "*sh-help*"
     (Man-build-section-list)
     Man--sections))
 
 ;; when Man finishes, set point in MAN-BUFFER to be
 ;; after description of CMD
-;; (for `sh-help-more-help' on bash-builtins)
-(defun sh-help--Man-after-notify (man-buffer cmd)
+;; (for `nvp-sh-help-more-help' on bash-builtins)
+(defun nvp-sh-help--Man-after-notify (man-buffer cmd)
   (save-mark-and-excursion
     (with-current-buffer man-buffer
       (goto-char (point-min))
@@ -276,32 +276,32 @@
 
 ;; Too much trouble trying to figure out how to make Man
 ;; run synchronously or redefine Man notify command
-(defsubst sh-help-Man-notify (man-buffer cmd)
-  (run-with-timer 0.2 nil 'sh-help--Man-after-notify man-buffer cmd))
+(defsubst nvp-sh-help-Man-notify (man-buffer cmd)
+  (run-with-timer 0.2 nil 'nvp-sh-help--Man-after-notify man-buffer cmd))
 
 ;; -------------------------------------------------------------------
 ;;; Help at point
 (defvar Man-notify-method)
-(defun sh-help-more-help (cmd)
+(defun nvp-sh-help-more-help (cmd)
   (interactive)
   (sh-with-bash/man cmd
     (let ((Man-notify-method 'meek))
       (man "bash-builtins")
-      (sh-help--Man-after-notify "*Man bash-builtins*" cmd))
+      (nvp-sh-help--Man-after-notify "*Man bash-builtins*" cmd))
     (man cmd)))
 
 ;; show help in popup tooltip for CMD
 ;; show SECTION from 'man', prompting with prefix
-(defun sh-help-command-at-point (cmd &optional prompt section recache)
+(defun nvp-sh-help-command-at-point (cmd &optional prompt section recache)
   (interactive (list (thing-at-point 'symbol)))
   (when cmd
     (nvp-with-toggled-tip
-      (or (sh-help--function-string
+      (or (nvp-sh-help--function-string
            cmd
            (if prompt
                ;; FIXME: calls CMD twice
                (ido-completing-read
-                "Man Section: " (sh-help--man-sections cmd) nil t)
+                "Man Section: " (nvp-sh-help--man-sections cmd) nil t)
              section)
            recache)
           (format "No help found for %s" cmd))
@@ -310,17 +310,17 @@
                  ;; why isn't this being captured lexically?
                  ;; it is let bound in the `nvp-with-toggled-tip'
                  (let ((x-gtk-use-system-tooltips nil)) (x-hide-tip))
-                 (sh-help-more-help cmd)))))
+                 (nvp-sh-help-more-help cmd)))))
 
 ;; display help for conditional expressions: '[[' '['
-(defun sh-help-conditional (switch &optional ignore)
+(defun nvp-sh-help-conditional (switch &optional ignore)
   (interactive
    (if (x-hide-tip)
        (list nil 'ignore)
-     (list (completing-read "Switch: " sh-help-conditional-cache))))
+     (list (completing-read "Switch: " nvp-sh-help-conditional-cache))))
   (when (not ignore)
     (nvp-with-toggled-tip
-      (sh-help--conditional-string switch) :help-fn :none)))
+      (nvp-sh-help--conditional-string switch) :help-fn :none)))
 
 ;; popup help for thing at point
 ;; - with C-u, show help for thing directly at point
@@ -331,19 +331,19 @@
 ;; show help for current switch, eg. "-d", or all possible switches
 ;;;###autoload
 
-(defun sh-help-at-point (arg)
+(defun nvp-sh-help-at-point (arg)
   (interactive "P")
   (if (equal arg '(4))
-      (call-interactively 'sh-help-command-at-point)
-    (let ((cmd (sh-help-current-command)))
+      (call-interactively 'nvp-sh-help-command-at-point)
+    (let ((cmd (nvp-sh-help-current-command)))
       (cond
        ((member cmd '("[[" "["))
         ;; return help for current switch or all if not found
-        (sh-help-conditional (sh-help-conditional-switch)))
+        (nvp-sh-help-conditional (nvp-sh-help-conditional-switch)))
        (t
         ;; with C-u C-u prompt for 'man' section and recache
-        (sh-help-command-at-point
+        (nvp-sh-help-command-at-point
          cmd (equal arg '(16)) nil (equal arg '(16))))))))
 
-(provide 'sh-help)
-;;; sh-help.el ends here
+(provide 'nvp-sh-help)
+;;; nvp-sh-help.el ends here

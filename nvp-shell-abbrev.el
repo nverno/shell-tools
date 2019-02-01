@@ -2,7 +2,7 @@
 
 ;; This is free and unencumbered software released into the public domain.
 
-;; Last modified: <2019-01-24 18:00:44>
+;; Last modified: <2019-01-31 21:43:48>
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; Maintainer: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
@@ -35,8 +35,6 @@
 (require 'abbrev)
 (require 'nvp-shell)
 (declare-function nvp-abbrev-expand-not-after-punct-p "nvp-abbrev")
-
-;; (define-abbrev-table 'nvp-shell-abbrev-table '())
 
 ;; read aliases from bash_aliases to alist ((alias . expansion) ... )
 (defun nvp-shell-read-aliases (file &optional merge os)
@@ -94,8 +92,7 @@
   ;; construct abbrev table
   (define-abbrev-table 'nvp-shell-abbrev-table
     (nvp-shell-read-aliases file merge os)
-    :parents (list shells-abbrev-table
-                   prog-mode-abbrev-table)
+    :parents (list shells-abbrev-table prog-mode-abbrev-table)
     :enable-function 'nvp-abbrev-expand-not-after-punct-p
     :regexp nvp-shell-abbrev-re)
   (when system

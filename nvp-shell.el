@@ -4,7 +4,7 @@
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
-;; Last modified: <2019-01-25 22:00:35>
+;; Last modified: <2019-01-31 22:05:57>
 ;; Package-Requires: 
 ;; Created:  4 November 2016
 
@@ -32,12 +32,7 @@
 ;;; Code:
 (eval-when-compile
   (require 'cl-lib)
-  (require 'nvp-macro)
-  (require 'pcomplete)
-  (defvar shells-abbrev-table))
-(autoload 'pcomplete--here "pcomplete")
-(autoload 'pcomplete-entries "pcomplete")
-(autoload 'expand-add-abbrevs "expand")
+  (require 'nvp-macro))
 
 (nvp-package-define-root :snippets t)
 
@@ -129,34 +124,6 @@
       (when exp
         (delete-region start end)
         (insert exp)))))
-
-;; -------------------------------------------------------------------
-;;; Pcomplete 
-
-(defun pcomplete/shell-mode/git ()
-  (pcomplete-here
-   '("add" "bisect" "branch" "checkout" "clone" "commit" "diff" "fetch"
-     "grep" "init" "log" "merge" "mv" "pull" "push" "rebase" "remote"
-     "reset" "rm" "show" "status" "submodule" "tag"))
-       
-  ;; FIXME: branches? cant use readline on windows, not sure its
-  ;; worth fixing
-  (pcomplete-here
-   (let ((last-cmd (nth (1- pcomplete-last) pcomplete-args)))
-     (cond
-      ((equal "checkout" last-cmd) " ")
-      ;; (my--get-git-branches)
-      ((equal "add" last-cmd)
-       (pcomplete-entries))
-      ((equal "merge" last-cmd) " ")
-      ;; (my--get-git-branches t)
-      ))))
-
-;; setup clink so it starts whenever cmd.exe runs
-(nvp-with-w32
-  (defun shell-w32tools-clink-install ()
-    (start-process "clink" "*nvp-install*" "cmd.exe"
-                   "clink" "autorun" "install")))
 
 ;; -------------------------------------------------------------------
 ;;; External

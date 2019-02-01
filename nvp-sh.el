@@ -4,7 +4,7 @@
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
-;; Last modified: <2019-01-27 01:53:16>
+;; Last modified: <2019-01-31 22:11:15>
 ;; Package-Requires: 
 ;; Created:  5 December 2016
 
@@ -42,7 +42,7 @@
   (require 'subr-x)
   (defvar explicit-shell-file-name))
 (require 'nvp-shell)
-(require 'sh-help)
+(require 'nvp-sh-help)
 (require 'company)
 (require 'company-quickhelp)
 (require 'company-bash)
@@ -51,7 +51,6 @@
 (declare-function company-shell "company-shell")
 (declare-function bash-completion-dynamic-complete "bash-completion")
 (declare-function bash-completion-dynamic-complete-nocomint "bash-completion")
-(declare-function sp-wrap-with-pair "smartparens")
 
 (autoload 'string-trim "subr-x")
 
@@ -258,8 +257,8 @@ Used to set `end-of-defun-function'."
 ;; return a company-documentation buffer with either Man output or bash help
 ;; for a builtin
 (defun nvp-sh-doc-buffer (cmd)
-  (let ((doc-str (if (sh-help-bash-builtin-p cmd)
-                     (sh-help-bash-builtin-sync cmd)
+  (let ((doc-str (if (nvp-sh-help-bash-builtin-p cmd)
+                     (nvp-sh-help-bash-builtin-sync cmd)
                    (shell-command-to-string (format "man %s" cmd)))))
     (and (not (or (member doc-str '(nil ""))
                   (string-prefix-p "No manual entry" doc-str)))
@@ -320,10 +319,10 @@ Used to set `end-of-defun-function'."
   (font-lock-add-keywords
    nil
    `((,(apply-partially
-        'nvp-sh-fontify-quoted
+        #'nvp-sh-fontify-quoted
         "\\$\\({#?\\)?\\([[:alpha:]_][[:alnum:]_]*\\|[-#?@!*]\\)")
       (2 font-lock-variable-name-face prepend))
-     (,(apply-partially 'nvp-sh-fontify-quoted "`\\s-*\\([[:alnum:]_\\-]+\\)[^`]*`")
+     (,(apply-partially #'nvp-sh-fontify-quoted "`\\s-*\\([[:alnum:]_\\-]+\\)[^`]*`")
       (1 'sh-quoted-exec prepend))))
   (if (fboundp #'font-lock-flush)
       (font-lock-flush)
