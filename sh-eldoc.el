@@ -4,7 +4,7 @@
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
-;; Last modified: <2019-01-25 20:23:05>
+;; Last modified: <2019-02-01 00:17:28>
 ;; Package-Requires: 
 ;; Created:  4 December 2016
 
@@ -36,7 +36,7 @@
 ;;; Code:
 (eval-when-compile
   (require 'nvp-macro))
-(require 'sh-help)
+(require 'nvp-sh-help)
 (require 'eldoc)
 
 (defvar sh-eldoc-cache (make-hash-table :test 'equal))
@@ -44,7 +44,7 @@
 ;; return formatted doc string for bash builtins
 (defun sh-eldoc-builtin-string (cmd)
   (or (gethash cmd sh-eldoc-cache)
-      (let ((str (sh-help-bash-builtin-sync cmd 'synopsis)))
+      (let ((str (nvp-sh-help-bash-builtin-sync cmd 'synopsis)))
         ;; remove 'cmd: ' and trailing newline
         (setq str (substring str (+ 2 (length cmd)) (1- (length str))))
         ;; propertize CMD
@@ -83,7 +83,7 @@
 (defun sh-eldoc-function ()
   "Return eldoc string for bash functions (builtins and those avaliable \
 from `man %s'."
-  (let ((func (sh-help-current-command)))
+  (let ((func (nvp-sh-help-current-command)))
     (and func
          (sh-with-bash/man func
            (sh-eldoc-builtin-string func) ;; synchronously
