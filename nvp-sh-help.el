@@ -4,7 +4,7 @@
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
-;; Last modified: <2019-01-31 21:51:09>
+;; Last modified: <2019-02-02 02:11:37>
 ;; Package-Requires: 
 ;; Created:  5 December 2016
 ;; Last modified: 2019-01-14 11:34:27 noah
@@ -43,7 +43,6 @@
   (defvar Man--sections))
 (require 'nvp-help) ;; parse 'man' stuff
 (autoload 'Man-build-section-list "man")
-(autoload 'nvp-basic-temp-binding "nvp-basic")
 (autoload 'pos-tip-show "pos-tip")
 
 ;; ignore ':', not symbolized to match strings
