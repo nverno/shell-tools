@@ -2,7 +2,7 @@
 
 ;; This is free and unencumbered software released into the public domain.
 
-;; Last modified: <2019-02-01 21:15:09>
+;; Last modified: <2019-02-07 08:16:31>
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; Maintainer: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
@@ -31,9 +31,7 @@
 (eval-when-compile
   (require 'nvp-macro))
 (declare-function xterm-color-colorize-buffer "xterm-color")
-(declare-function nvp-indicate-modeline-success "nvp-indicate")
 (declare-function nvp-compile-basic "nvp-compile")
-(declare-function nvp-bind-local-bindings "nvp-bind")
 
 ;;;###autoload
 (defun nvp-shellcheck ()
@@ -54,7 +52,7 @@
           #'(lambda (_m) (concat "*shellcheck: " (buffer-file-name) "*")))
          (funcs compilation-finish-functions)
          (kill-func #'(lambda (&rest _ignored)
-                        (nvp-bind-local-bindings '(("q" kill-this-buffer)))
+                        (nvp-use-local-bindings ("q" . kill-this-buffer))
                         ;; reset compilation-finish-functions
                         (setq compilation-finish-functions funcs))))
     (setq compilation-finish-functions kill-func)
