@@ -4,7 +4,7 @@
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
-;; Last modified: <2019-02-10 04:41:07>
+;; Last modified: <2019-02-10 19:39:51>
 ;; Package-Requires: 
 ;; Created:  5 December 2016
 ;; Last modified: 2019-01-14 11:34:27 noah
@@ -306,9 +306,6 @@
           (format "No help found for %s" cmd))
       :help-fn (lambda ()
                  (interactive)
-                 ;; why isn't this being captured lexically?
-                 ;; it is let bound in the `nvp-with-toggled-tip'
-                 (let ((x-gtk-use-system-tooltips nil)) (x-hide-tip))
                  (nvp-sh-help-more-help cmd)))))
 
 ;; display help for conditional expressions: '[[' '['
