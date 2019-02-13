@@ -31,7 +31,7 @@
 (eval-when-compile
   (require 'nvp-macro))
 (declare-function xterm-color-colorize-buffer "xterm-color")
-(declare-function nvp-compile-basic "nvp-compile")
+(declare-function nvp-compile "nvp-compile")
 
 ;;;###autoload
 (defun nvp-shellcheck ()
@@ -56,7 +56,7 @@
                         ;; reset compilation-finish-functions
                         (setq compilation-finish-functions funcs))))
     (setq compilation-finish-functions kill-func)
-    (nvp-compile-basic)))
+    (nvp-compile)))
 
 (defun nvp-shellcheck-compilation-setup ()
   "Add compilation regexp for shellcheck output."
