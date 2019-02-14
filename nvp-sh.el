@@ -4,7 +4,7 @@
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
-;; Last modified: <2019-01-31 22:11:15>
+;; Last modified: <2019-02-13 19:33:28>
 ;; Package-Requires: 
 ;; Created:  5 December 2016
 
@@ -458,6 +458,8 @@ Optionally return process specific to THIS-BUFFER."
   (setq-local beginning-of-defun-function 'nvp-sh-beginning-of-defun)
   (setq-local end-of-defun-function 'nvp-sh-end-of-defun)
   (setq-local align-rules-list nvp-sh-align-rules-list)
+  (make-local-variable 'hippie-expand-try-functions-list)
+  (push 'nvp-he-try-expand-shell-alias hippie-expand-try-functions-list)
   (nvp-sh-font-lock)
   (nvp-sh-completion-setup)
   (add-hook 'kill-buffer-hook 'nvp-sh-cleanup-buffer nil 'local))
