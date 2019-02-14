@@ -4,7 +4,7 @@
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
-;; Last modified: <2019-01-25 00:24:39>
+;; Last modified: <2019-02-13 19:10:22>
 ;; Package-Requires: 
 ;; Created:  7 December 2016
 
@@ -137,8 +137,11 @@
 
 (autoload 'nvp-shell-get-alias "nvp-shell")
 
+(defvar-local nvp-he-shell-alias-beg (lambda () (car (bounds-of-thing-at-point 'symbol)))
+  "Beginning position of previous shell alias.")
+
 ;;;###autoload
-(defun try-expand-shell-alias (old)
+(defun nvp-he-try-expand-shell-alias (old)
   "Expand shell alias, like bash shell-expand-alias."
   (if (not old)
       (progn
