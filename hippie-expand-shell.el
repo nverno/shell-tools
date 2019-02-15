@@ -4,7 +4,7 @@
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
-;; Last modified: <2019-02-13 20:54:13>
+;; Last modified: <2019-02-15 10:25:58>
 ;; Package-Requires: 
 ;; Created:  7 December 2016
 
@@ -135,7 +135,7 @@
 ;; -------------------------------------------------------------------
 ;;; Expand shell aliases, eg. bash shell-expand-alias C-M-e 
 
-(autoload 'nvp-shell-get-alias "nvp-shell")
+(autoload 'nvp-shell-alias-table "nvp-shell")
 
 (defvar-local nvp-he-shell-alias-beg ()
   "Returns beginning position of previous shell alias.")
@@ -150,14 +150,16 @@
      (let ((beg (funcall nvp-he-shell-alias-beg)))
        (and (not beg) (cl-return))
        (he-init-string beg (point))
+        (unless (he-string-member he-search-string he-tried-table)
+          (setq he-tried-table (cons he-search-string he-tried-table)))
        (setq he-expand-list             ;completions from hash table
              (and (not (equal "" he-search-string))
                   (delq nil
                         (mapcar
                          (lambda (abbr)
-                           (gethash abbr nvp-shell-alias-table nil))
-                         (all-completions he-search-string
-                                          nvp-shell-alias-table))))))
+                           (gethash abbr (nvp-shell-alias-table) nil))
+                         (all-completions
+                          he-search-string (nvp-shell-alias-table)))))))
      (while (and he-expand-list         ;remove seen strings from table
                  (he-string-member (car he-expand-list) he-tried-table t))
        (setq he-expand-list (cdr he-expand-list)))
