@@ -4,7 +4,7 @@
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
-;; Last modified: <2019-02-20 23:13:49>
+;; Last modified: <2019-02-21 13:00:33>
 ;; Package-Requires: 
 ;; Created:  5 December 2016
 
@@ -41,6 +41,7 @@
   (require 'cl-lib)
   (require 'subr-x)
   (defvar explicit-shell-file-name))
+(require 'nvp)
 (require 'nvp-shell)
 (require 'nvp-sh-help)
 (require 'company)
@@ -302,19 +303,6 @@ Used to set `end-of-defun-function'."
 ;; ------------------------------------------------------------
 ;;; Font-lock
 
-(defface nvp-gaudy-variable-face
-  `((((class grayscale) (background light))
-     (:background "Gray90" :weight bold :slant italic))
-    (((class grayscale) (background dark))
-     (:foreground "Gray80" :weight bold :slant italic))
-    (((class color) (background light))
-     (:inherit font-lock-variable-name-face :weight bold :slant italic))
-    (((class color) (background dark))
-     (:inherit font-lock-variable-name-face :weight bold :slant italic))
-    (t (:weight bold)))
-  "Gaudy variable font locking - bold & italicized."
-  :group 'nvp)
-
 ;; Add additional font-locking to quoted variables
 ;; Non-nil if point in inside a double-quoted string.
 (defsubst nvp-sh-font-lock--quoted-p ()
@@ -414,12 +402,6 @@ Optionally return process specific to THIS-BUFFER."
                          (goto-char (match-beginning 1))
                          (and (not (bolp))
                               (not (nth 3 (syntax-ppss)))))))))))
-
-;; align region or buffer
-(defun nvp-sh-align (beg end &optional all)
-  (interactive "r\np")
-  (if all (align (point-min) (point-max))
-    (align beg end)))
 
 ;; enforce uft-8-unix and align when killing buffer
 (defun nvp-sh-cleanup-buffer ()
