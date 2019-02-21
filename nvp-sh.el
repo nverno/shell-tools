@@ -4,7 +4,7 @@
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
-;; Last modified: <2019-02-20 21:20:31>
+;; Last modified: <2019-02-20 23:13:49>
 ;; Package-Requires: 
 ;; Created:  5 December 2016
 
@@ -377,9 +377,8 @@ Optionally return process specific to THIS-BUFFER."
 ;; switch to shell REPL, specific to this buffer with a prefix arg
 (nvp-repl-switch "sh"
     (:repl-mode 'shell-mode
-     :repl-find-fn
-     #'(lambda ()
-         (process-buffer (nvp-sh-get-process current-prefix-arg)))
+     :repl-find-fn #'(lambda ()
+                       (process-buffer (nvp-sh-get-process current-prefix-arg)))
      :repl-switch-fn 'pop-to-buffer)
   (process-buffer
    (setq sh-shell-process (nvp-sh-get-process current-prefix-arg))))
@@ -466,7 +465,7 @@ Optionally return process specific to THIS-BUFFER."
 (defun nvp-sh-toggle-fontification ()
   "Toggle extra fontification on/off."
   (interactive)
-  (nvp-if-toggle (font-lock-refresh-defaults)
+  (nvp-toggled-if (font-lock-refresh-defaults)
     (nvp-sh-font-lock)))
 
 ;; -------------------------------------------------------------------
