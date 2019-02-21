@@ -4,7 +4,7 @@
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
-;; Last modified: <2019-02-13 19:33:28>
+;; Last modified: <2019-02-20 21:20:31>
 ;; Package-Requires: 
 ;; Created:  5 December 2016
 
@@ -302,6 +302,19 @@ Used to set `end-of-defun-function'."
 ;; ------------------------------------------------------------
 ;;; Font-lock
 
+(defface nvp-gaudy-variable-face
+  `((((class grayscale) (background light))
+     (:background "Gray90" :weight bold :slant italic))
+    (((class grayscale) (background dark))
+     (:foreground "Gray80" :weight bold :slant italic))
+    (((class color) (background light))
+     (:inherit font-lock-variable-name-face :weight bold :slant italic))
+    (((class color) (background dark))
+     (:inherit font-lock-variable-name-face :weight bold :slant italic))
+    (t (:weight bold)))
+  "Gaudy variable font locking - bold & italicized."
+  :group 'nvp)
+
 ;; Add additional font-locking to quoted variables
 ;; Non-nil if point in inside a double-quoted string.
 (defsubst nvp-sh-font-lock--quoted-p ()
@@ -315,14 +328,20 @@ Used to set `end-of-defun-function'."
     res))
 
 (defun nvp-sh-font-lock ()
-  "Add font-locking for quoted variables and quoted backquoted execs."
+  "Add font-locking for variables, special variables, arrays and \
+backquoted executables in double quotes."
   (font-lock-add-keywords
    nil
-   `((,(apply-partially
+   `((,(apply-partially                 ;vars, special vars, function args
         #'nvp-sh-fontify-quoted
-        "\\$\\({#?\\)?\\([[:alpha:]_][[:alnum:]_]*\\|[-#?@!*]\\)")
-      (2 font-lock-variable-name-face prepend))
-     (,(apply-partially #'nvp-sh-fontify-quoted "`\\s-*\\([[:alnum:]_\\-]+\\)[^`]*`")
+        "\\${?\\([[:alpha:]_][[:alnum:]_]*\\|[-#?@!*]\\|[0-9]\\)")
+      (1 font-lock-variable-name-face prepend))
+     (,(apply-partially                 ;gaudy font-lock for array
+        #'nvp-sh-fontify-quoted
+        "\\${\\([!#?]?[[:alpha:]_][[:alnum:]_]*\\[[@*]\\]\\)")
+      (1 'nvp-gaudy-array-face prepend))
+     (,(apply-partially                 ;functions in quoted `...`
+        #'nvp-sh-fontify-quoted "`\\s-*\\([[:alnum:]_\\-]+\\)[^`]*`")
       (1 'sh-quoted-exec prepend))))
   (if (fboundp #'font-lock-flush)
       (font-lock-flush)
@@ -445,9 +464,9 @@ Optionally return process specific to THIS-BUFFER."
             (forward-to-indentation)))))))
 
 (defun nvp-sh-toggle-fontification ()
+  "Toggle extra fontification on/off."
   (interactive)
-  (if (not (eq last-command this-command))
-      (font-lock-refresh-defaults)
+  (nvp-if-toggle (font-lock-refresh-defaults)
     (nvp-sh-font-lock)))
 
 ;; -------------------------------------------------------------------
