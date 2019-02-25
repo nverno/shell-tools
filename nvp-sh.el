@@ -4,7 +4,7 @@
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
-;; Last modified: <2019-02-21 13:00:33>
+;; Last modified: <2019-02-25 05:32:27>
 ;; Package-Requires: 
 ;; Created:  5 December 2016
 
@@ -42,6 +42,7 @@
   (require 'subr-x)
   (defvar explicit-shell-file-name))
 (require 'nvp)
+(require 'nvp-parse)
 (require 'nvp-shell)
 (require 'nvp-sh-help)
 (require 'company)
@@ -106,15 +107,6 @@
           (back-to-indentation))
         (point)))))
 
-(defun nvp-sh-current-defun ()
-  "Find name of function containing point.
-Like `sh-current-defun-name' but ignore variables."
-  (save-excursion
-    (end-of-line)
-    (when (re-search-backward nvp-sh-function-re nil 'move)
-      (or (match-string-no-properties 1)
-          (match-string-no-properties 2)))))
-
 (defun nvp-sh-narrow-lexically ()
   "Like `narrow-to-defun', but only narrow if point is actually inside a function.
 Retrun point at start of function if narrowing was done."
@@ -127,6 +119,15 @@ Retrun point at start of function if narrowing was done."
            (progn
              (narrow-to-region (point) (progn (forward-sexp) (point)))
              (car parens))))))
+
+(cl-defmethod nvp-parse-current-function (&context (major-mode sh-mode) &rest _args)
+  "Find name of function containing point.
+Like `sh-current-defun-name' but ignore variables."
+  (save-excursion
+    (end-of-line)
+    (when (re-search-backward nvp-sh-function-re nil 'move)
+      (or (match-string-no-properties 1)
+          (match-string-no-properties 2)))))
 
 ;; -------------------------------------------------------------------
 ;;; Navigation
@@ -177,7 +178,7 @@ Used to set `end-of-defun-function'."
     (beginning-of-line)
     (when (search-forward "{" nil 'move) ;move to opening '{' and jump sexp
       (forward-char -1)
-      (forward-sexp)
+      (forward-list)
       (point))))
 
 ;; ------------------------------------------------------------
@@ -320,14 +321,14 @@ Used to set `end-of-defun-function'."
 backquoted executables in double quotes."
   (font-lock-add-keywords
    nil
-   `((,(apply-partially                 ;vars, special vars, function args
+   `(                                   ;gaudy font-lock for array
+     ("\\${\\([!#?]?[[:alpha:]_][[:alnum:]_]*\\[[@*]\\]\\)}"
+      (1 'nvp-italic-variable-face prepend))
+     ("\\(>[ ]*/dev/null\\)" (1 'nvp-italic-type-face prepend))
+     (,(apply-partially                 ;vars, special vars, function args
         #'nvp-sh-fontify-quoted
         "\\${?\\([[:alpha:]_][[:alnum:]_]*\\|[-#?@!*]\\|[0-9]\\)")
       (1 font-lock-variable-name-face prepend))
-     (,(apply-partially                 ;gaudy font-lock for array
-        #'nvp-sh-fontify-quoted
-        "\\${\\([!#?]?[[:alpha:]_][[:alnum:]_]*\\[[@*]\\]\\)")
-      (1 'nvp-gaudy-array-face prepend))
      (,(apply-partially                 ;functions in quoted `...`
         #'nvp-sh-fontify-quoted "`\\s-*\\([[:alnum:]_\\-]+\\)[^`]*`")
       (1 'sh-quoted-exec prepend))))
@@ -416,7 +417,7 @@ Optionally return process specific to THIS-BUFFER."
 ;;; Yas / Snippets
 
 (defun nvp-sh-yas-defun-or-script ()
-  (or (nvp-sh-current-defun) (nvp-bfn)))
+  (or (nvp-parse-current-function) (nvp-bfn)))
 
 ;; -------------------------------------------------------------------
 ;;; Toggle
