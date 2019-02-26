@@ -4,7 +4,7 @@
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
-;; Last modified: <2019-02-01 00:17:28>
+;; Last modified: <2019-02-26 00:40:18>
 ;; Package-Requires: 
 ;; Created:  4 December 2016
 
@@ -57,22 +57,23 @@
 (defun sh-eldoc--man (cmd)
   (sh-with-man-help cmd nil "*sh-eldoc*"
     (goto-char (point-min))
-    (when (search-forward "SYNOPSIS" nil 'move)
-      (while (not (looking-at-p (concat "\\([ \t]+" cmd "\\|^[^ \t]\\)")))
-        (forward-line))
-      (skip-chars-forward " \t")
-      ;; put result in cache
-      (puthash
-       cmd 
-       (concat
-        (propertize cmd 'face 'font-lock-function-name-face) ": "
-        (and (looking-at "[^ \t]+[ \t]+\\([^\n]+\\)")
-             (match-string 1))
-        ;; (buffer-substring
-        ;;  (+ (length cmd) (point)) (point-at-eol))
-        )
-       sh-eldoc-cache)
-      (erase-buffer))))
+    (ignore-errors
+      (when (search-forward "SYNOPSIS")
+        (while (not (looking-at-p (concat "\\([ \t]+" cmd "\\|^[^ \t]\\)")))
+          (forward-line))
+        (skip-chars-forward " \t")
+        ;; put result in cache
+        (puthash
+         cmd 
+         (concat
+          (propertize cmd 'face 'font-lock-function-name-face) ": "
+          (and (looking-at "[^ \t]+[ \t]+\\([^\n]+\\)")
+               (match-string 1))
+          ;; (buffer-substring
+          ;;  (+ (length cmd) (point)) (point-at-eol))
+          )
+         sh-eldoc-cache)
+        (erase-buffer)))))
 
 ;; get doc string from man
 (defun sh-eldoc-man-string (cmd)
