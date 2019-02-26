@@ -4,7 +4,7 @@
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/shell-tools
-;; Last modified: <2019-02-25 05:32:27>
+;; Last modified: <2019-02-26 12:17:05>
 ;; Package-Requires: 
 ;; Created:  5 December 2016
 
@@ -324,7 +324,7 @@ backquoted executables in double quotes."
    `(                                   ;gaudy font-lock for array
      ("\\${\\([!#?]?[[:alpha:]_][[:alnum:]_]*\\[[@*]\\]\\)}"
       (1 'nvp-italic-variable-face prepend))
-     ("\\(>[ ]*/dev/null\\)" (1 'nvp-italic-type-face prepend))
+     ("\\([<>][ ]*/dev/null\\)" (1 'nvp-italic-type-face prepend))
      (,(apply-partially                 ;vars, special vars, function args
         #'nvp-sh-fontify-quoted
         "\\${?\\([[:alpha:]_][[:alnum:]_]*\\|[-#?@!*]\\|[0-9]\\)")
