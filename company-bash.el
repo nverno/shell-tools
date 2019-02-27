@@ -3,9 +3,8 @@
 ;; This is free and unencumbered software released into the public domain.
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
-;; Last modified: <2019-01-26 16:59:04>
+;; Last modified: <2019-02-26 20:55:57>
 ;; URL: https://github.com/nverno/shell-tools
-;; Package-Requires: 
 ;; Created:  8 November 2016
 
 ;; This file is not part of GNU Emacs.
@@ -33,7 +32,7 @@
 (eval-when-compile
   (require 'cl-lib))
 (require 'company)
-(autoload 'imenu--make-index-alist "imenu")
+(require 'imenu)
 
 ;; time of last index creation
 (defvar-local company-bash-last-index nil)
